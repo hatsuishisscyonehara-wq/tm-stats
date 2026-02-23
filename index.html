@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 完全版（画像出力削除）</title>
+<title>スタッツ入力</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -96,7 +96,7 @@ button{
 
 <body>
 
-<h2>TMスタッツ Pro</h2>
+<h2>スタッツ入力</h2>
 
 <div class="card">
 
@@ -134,13 +134,15 @@ button{
 
 <div class="card">
 
-<div>選手選択（出場時間カウント）</div>
+<div>出場選手（出場時間カウント）</div>
 
 <div class="player-list" id="playerList"></div>
 
 <button class="primary" onclick="startMatch()">試合開始</button>
 <button class="success" onclick="finishMatch()">試合終了</button>
-<button class="primary" onclick="clearPlayerSelection()">選手選択クリア</button>
+
+<!-- 改修①：全クリア（元の全クリア動作） -->
+<button class="primary" onclick="clearAllData()">全クリア</button>
 
 </div>
 
@@ -220,7 +222,7 @@ players.forEach(p=>{
 });
 
 /* ===============================
-試合開始（改修①）
+試合開始
 =============================== */
 
 function startMatch(){
@@ -254,7 +256,7 @@ function startMatch(){
 }
 
 /* ===============================
-チェック同期＋動的UI更新（改修②）
+チェック同期（動的UI更新維持）
 =============================== */
 
 function syncPlayerTimer(){
@@ -263,26 +265,43 @@ function syncPlayerTimer(){
         playerState[el.value].active=el.checked;
     });
 
-    // 試合開始後はチェック変更でUIを動的更新
     if(matchStarted){
         renderCounters();
     }
 }
 
 /* ===============================
-選手選択クリア
+出場選手クリア（全クリア統合）
 =============================== */
 
-function clearPlayerSelection(){
+function clearAllData(){
+
+    if(!confirm("全データをクリアしますか？")) return;
+
+    Object.keys(records).forEach(p=>{
+        [...attackKeys,...defenseKeys].forEach(k=>{
+            records[p][k]=0;
+        });
+    });
+
+    Object.values(playerState).forEach(st=>{
+        st.time=0;
+        st.active=false;
+    });
+
+    document.querySelectorAll(".value").forEach(el=>{
+        el.innerText="0";
+    });
+
+    document.querySelectorAll(".timer").forEach(el=>{
+        el.innerText="00:00";
+    });
 
     document.querySelectorAll("#playerList input")
     .forEach(el=>el.checked=false);
 
-    Object.keys(playerState).forEach(name=>{
-        playerState[name].active=false;
-    });
-
-    renderCounters();
+    inputArea.innerHTML="";
+    matchStarted=false;
 }
 
 /* ===============================
@@ -364,7 +383,7 @@ function updateTimerUI(name){
         String(s).padStart(2,"0");
 }
 
-/* 試合終了（改修②） */
+/* 試合終了 */
 
 function finishMatch(){
 
@@ -439,38 +458,6 @@ function exportExcel(){
         wb,
         `${yyyymmdd}_${opponentName}.xlsx`
     );
-}
-
-/* 全クリア */
-
-function clearAllData(){
-
-    if(!confirm("全データをクリアしますか？")) return;
-
-    Object.keys(records).forEach(p=>{
-        [...attackKeys,...defenseKeys].forEach(k=>{
-            records[p][k]=0;
-        });
-    });
-
-    Object.values(playerState).forEach(st=>{
-        st.time=0;
-        st.active=false;
-    });
-
-    document.querySelectorAll(".value").forEach(el=>{
-        el.innerText="0";
-    });
-
-    document.querySelectorAll(".timer").forEach(el=>{
-        el.innerText="00:00";
-    });
-
-    document.querySelectorAll("#playerList input")
-    .forEach(el=>el.checked=false);
-
-    inputArea.innerHTML="";
-    matchStarted=false;
 }
 
 </script>
