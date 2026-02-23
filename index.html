@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ入力 Pro 完全版</title>
+<title>TMスタッツ Pro 完全版</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-
 body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
     background:#f3f4f6;
@@ -16,9 +15,7 @@ body{
     padding:8px;
 }
 
-h2{
-    text-align:center;
-}
+h2{text-align:center;}
 
 .card{
     background:#fff;
@@ -32,10 +29,9 @@ h2{
     display:flex;
     flex-direction:column;
     gap:6px;
-    margin-top:6px;
 }
 
-input, select{
+input,select{
     padding:8px;
     border-radius:8px;
     border:1px solid #ccc;
@@ -103,23 +99,19 @@ button{
     z-index:999;
 }
 
-#toast.show{
-    opacity:.85;
-}
-
+#toast.show{opacity:.85;}
 </style>
 </head>
 
 <body>
 
-<h2>TMスタッツ入力v3 Pro</h2>
+<h2>TMスタッツ入力 Pro</h2>
 
 <div class="card">
 
 <div class="section-title">試合基本情報</div>
 
 <div class="input-group">
-
 <label>日にち</label>
 <input type="date" id="matchDate">
 
@@ -134,14 +126,13 @@ button{
 <option>3-3-1</option>
 <option>2-3-2</option>
 </select>
-
 </div>
 
-<div class="section-title">入力タイプ（3択）</div>
+<div class="section-title">入力タイプ</div>
 
 <label><input type="radio" name="mode" value="attack"> 攻撃</label>
 <label><input type="radio" name="mode" value="defense"> 守備</label>
-<label><input type="radio" name="mode" value="both"> 両方</label>
+<label><input type="radio" name="mode" value="both"> 攻撃守備両方</label>
 
 <div class="section-title">選手選択</div>
 <div class="player-list" id="playerList"></div>
@@ -150,20 +141,17 @@ button{
 
 </div>
 
-<div id="termsArea"></div>
 <div id="inputArea"></div>
 
 <button class="success" onclick="finishMatch()">Excel出力</button>
-<button class="primary" onclick="exportStatsImage()">画像出力（LINE共有）</button>
+<button class="primary" onclick="exportStatsImage()">画像出力</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
 <div id="toast"></div>
 
 <script>
 
-/* ===============================
-データ定義
-=============================== */
+/* ===== データ ===== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -192,11 +180,24 @@ SL:"【守備】スライディング"
 let records={};
 let currentMode="";
 
-/* ===============================
-UI生成
-=============================== */
+/* ===== UI生成 ===== */
 
 const playerList=document.getElementById("playerList");
+
+/* Allクリア */
+
+const allClearLabel=document.createElement("label");
+const allClearCheck=document.createElement("input");
+
+allClearCheck.type="checkbox";
+allClearCheck.onchange=function(){
+    document.querySelectorAll("#playerList input")
+    .forEach(el=>el.checked=false);
+};
+
+allClearLabel.appendChild(allClearCheck);
+allClearLabel.append(" Allクリア");
+playerList.appendChild(allClearLabel);
 
 players.forEach(p=>{
     const label=document.createElement("label");
@@ -211,22 +212,11 @@ players.forEach(p=>{
     playerList.appendChild(label);
 });
 
-/* ===============================
-保存
-=============================== */
-
-function saveLocal(){
-    localStorage.setItem("tm_records",JSON.stringify(records));
-}
-
-/* ===============================
-入力開始
-=============================== */
+/* ===== 入力開始 ===== */
 
 function startInput(){
 
     const mode=document.querySelector("input[name='mode']:checked");
-
     if(!mode){
         alert("入力タイプ選択");
         return;
@@ -288,9 +278,7 @@ function counterHTML(name,key){
     </div>`;
 }
 
-/* ===============================
-カウント変更
-=============================== */
+/* ===== カウント ===== */
 
 function change(player,key,delta){
 
@@ -301,13 +289,9 @@ function change(player,key,delta){
 
     document.getElementById(`${player}_${key}`)
         .innerText=records[player][key];
-
-    saveLocal();
 }
 
-/* ===============================
-Excel出力（前仕様）
-=============================== */
+/* ===== Excel出力 ===== */
 
 function finishMatch(){
 
@@ -352,16 +336,10 @@ function finishMatch(){
         "_TM_"+(opponent.value||"")+".xlsx"
     );
 
-    toast("Excel出力しました");
-
-    setTimeout(()=>{
-        clearAllData();
-    },500);
+    setTimeout(clearAllData,500);
 }
 
-/* ===============================
-画像出力（最終仕様）
-=============================== */
+/* ===== 画像出力 ===== */
 
 function exportStatsImage(){
 
@@ -386,13 +364,16 @@ function exportStatsImage(){
 
     const yyyymmdd=(matchDate.value||"").replaceAll("-","");
 
-    ctx.fillText("◆日にち "+yyyymmdd,40,y);
-    y+=40;
+    ctx.fillText("◆日にち "+yyyymmdd,40,y); y+=40;
+    ctx.fillText("◆対戦相手 "+(opponent.value||""),40,y); y+=40;
+    ctx.fillText("◆フォーメーション "+(formation.value||""),40,y); y+=40;
 
-    ctx.fillText("◆対戦相手 "+(opponent.value||""),40,y);
-    y+=40;
+    let modeText="";
+    if(currentMode==="attack") modeText="攻撃";
+    else if(currentMode==="defense") modeText="守備";
+    else modeText="攻撃守備両方";
 
-    ctx.fillText("◆フォーメーション "+(formation.value||""),40,y);
+    ctx.fillText("◆入力タイプ "+modeText,40,y);
     y+=50;
 
     ctx.font="18px sans-serif";
@@ -410,15 +391,15 @@ function exportStatsImage(){
         y+=25;
 
         const stats=[
-            `ドリブルチャレンジ:${r.CHA||0}`,
-            `シュート:${r.SHO||0}`,
-            `ヘディング:${r.HD_O||0}`,
-            `スルーパス:${r.THP||0}`,
-            `ロングパス:${r.LP||0}`,
-            `ボール奪取:${r.SZ||0}`,
-            `抜かれた数:${r.PO||0}`,
-            `ヘディングクリア:${r.HD_D||0}`,
-            `スライディング:${r.SL||0}`
+            `【攻撃】ドリブルチャレンジ:${r.CHA||0}`,
+            `【攻撃】シュート:${r.SHO||0}`,
+            `【攻撃】ヘディング:${r.HD_O||0}`,
+            `【攻撃】スルーパス:${r.THP||0}`,
+            `【攻撃】ロングパス:${r.LP||0}`,
+            `【守備】ボール完全奪取:${r.SZ||0}`,
+            `【守備】抜かれた数:${r.PO||0}`,
+            `【守備】ヘディングクリア:${r.HD_D||0}`,
+            `【守備】スライディング:${r.SL||0}`
         ];
 
         stats.forEach(s=>{
@@ -436,13 +417,9 @@ function exportStatsImage(){
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    toast("画像出力しました");
 }
 
-/* ===============================
-全クリア
-=============================== */
+/* ===== 全クリア ===== */
 
 function clearAllData(){
 
@@ -451,18 +428,13 @@ function clearAllData(){
     }
 
     records={};
-    localStorage.removeItem("tm_records");
 
     document.querySelectorAll(".value").forEach(el=>{
         el.innerText="0";
     });
-
-    toast("全データをクリアしました");
 }
 
-/* ===============================
-トースト
-=============================== */
+/* ===== トースト ===== */
 
 function toast(msg){
     const t=document.getElementById("toast");
