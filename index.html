@@ -96,7 +96,7 @@ button{
 
 <body>
 
-<h2>TMスタッツ</h2>
+<h2>TMスタッツ Pro</h2>
 
 <div class="card">
 
@@ -107,7 +107,7 @@ button{
 
 <div class="form-row">
 <label>対戦相手（フリー入力）</label>
-<input type="text" id="opponent" placeholder="例：初石SSC">
+<input type="text" id="opponent" placeholder="例：初石SSC1試合目">
 </div>
 
 <div class="form-row">
@@ -140,11 +140,13 @@ button{
 
 <button class="primary" onclick="startInput()">入力開始</button>
 <button class="success" onclick="finishMatch()">試合終了</button>
+<button class="primary" onclick="clearPlayerSelection()">選手選択クリア</button>
 
 </div>
 
 <div id="inputArea"></div>
 
+<button class="success" onclick="finishMatch()">試合終了</button>
 <button class="success" onclick="exportExcel()">Excel出力</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
@@ -261,6 +263,22 @@ function syncPlayerTimer(){
 }
 
 /* ===============================
+選手選択クリア
+=============================== */
+
+function clearPlayerSelection(){
+
+    document.querySelectorAll("#playerList input")
+    .forEach(el=>el.checked=false);
+
+    Object.keys(playerState).forEach(name=>{
+        playerState[name].active=false;
+    });
+
+    renderCounters();
+}
+
+/* ===============================
 カウンタUI
 =============================== */
 
@@ -342,6 +360,8 @@ function updateTimerUI(name){
 /* 試合終了 */
 
 function finishMatch(){
+
+    alert("出場時間カウントを終了します。");
 
     if(timerInterval){
         clearInterval(timerInterval);
