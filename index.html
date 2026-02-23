@@ -339,25 +339,6 @@ function finishMatch(){
     );
 
     toast("Excel出力しました");
-
-    /* ⭐ 出力成功後自動クリア */
-    setTimeout(()=>{
-        clearAllData();
-    },500);
-}
-
-    const wb=XLSX.utils.book_new();
-    const ws=XLSX.utils.json_to_sheet(rows);
-
-    XLSX.utils.book_append_sheet(wb,ws,"TM");
-
-    XLSX.writeFile(
-        wb,
-        (matchDate.value||"match").replaceAll("-","")+
-        "_TM_"+(opponent.value||"")+".xlsx"
-    );
-
-    toast("Excel出力しました");
 }
 
 /* ========= 全クリア ========= */
@@ -386,4 +367,3 @@ function clearAllData(){
 
 </body>
 </html>
-
