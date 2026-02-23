@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>スタッツ入力アプリ</title>
+<title>TMスタッツ Pro 完全版</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -105,7 +105,7 @@ button{
 
 <body>
 
-<h2>スタッツ入力アプリ</h2>
+<h2>TMスタッツ入力 Pro</h2>
 
 <div class="card">
 
@@ -137,6 +137,7 @@ button{
 <div class="section-title">選手選択</div>
 <div class="player-list" id="playerList"></div>
 
+<button class="primary" onclick="clearPlayerSelect()">選手選択クリア</button>
 <button class="primary" onclick="startInput()">入力開始</button>
 
 </div>
@@ -196,6 +197,13 @@ players.forEach(p=>{
 
     playerList.appendChild(label);
 });
+
+/* ===== 選手選択クリア（追加） ===== */
+
+function clearPlayerSelect(){
+    document.querySelectorAll("#playerList input")
+    .forEach(el=>el.checked=false);
+}
 
 /* ===== 入力開始 ===== */
 
@@ -325,7 +333,7 @@ function finishMatch(){
     setTimeout(clearAllData,500);
 }
 
-/* ===== 画像出力（モード別） ===== */
+/* ===== 画像出力 ===== */
 
 function exportStatsImage(){
 
@@ -430,6 +438,18 @@ function clearAllData(){
     document.querySelectorAll(".value").forEach(el=>{
         el.innerText="0";
     });
+}
+
+/* ===== トースト ===== */
+
+function toast(msg){
+    const t=document.getElementById("toast");
+    t.innerText=msg;
+    t.classList.add("show");
+
+    setTimeout(()=>{
+        t.classList.remove("show");
+    },1500);
 }
 
 </script>
