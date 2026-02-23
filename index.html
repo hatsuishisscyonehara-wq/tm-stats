@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 完全版（出場時間統合）</title>
+<title>TMスタッツ Pro 完全版（修正版）</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-
 body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
     background:#f3f4f6;
@@ -16,11 +15,14 @@ body{
     padding:8px;
 }
 
+h2{text-align:center;}
+
 .card{
     background:#fff;
     padding:12px;
     border-radius:12px;
     margin-bottom:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
 .player-list{
@@ -32,10 +34,30 @@ body{
     font-size:14px;
 }
 
+.counter{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:4px;
+}
+
+.counter button{
+    width:32px;
+    height:32px;
+    border:none;
+    border-radius:6px;
+    background:#e2e8f0;
+}
+
+.value{
+    width:30px;
+    text-align:center;
+}
+
 .timer{
     color:#2563eb;
     font-weight:bold;
-    margin-left:8px;
+    margin-left:6px;
 }
 
 button{
@@ -54,11 +76,9 @@ button{
 
 <body>
 
-<h2>TMスタッツ Pro（出場時間統合版）</h2>
+<h2>TMスタッツ Pro（修正版統合）</h2>
 
 <div class="card">
-
-<div>試合基本情報</div>
 
 <label>日にち</label>
 <input type="date" id="matchDate">
@@ -79,6 +99,16 @@ button{
 
 <div class="card">
 
+<div>入力タイプ</div>
+
+<label><input type="radio" name="mode" value="attack"> 攻撃</label>
+<label><input type="radio" name="mode" value="defense"> 守備</label>
+<label><input type="radio" name="mode" value="both"> 攻撃守備両方</label>
+
+</div>
+
+<div class="card">
+
 <div>選手選択（出場時間カウント）</div>
 
 <div class="player-list" id="playerList"></div>
@@ -88,19 +118,15 @@ button{
 
 </div>
 
-<div class="card">
+<div id="inputArea"></div>
 
 <button class="success" onclick="finishMatch()">Excel出力</button>
 <button class="primary" onclick="exportStatsImage()">画像出力</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
-</div>
-
 <script>
 
-/* ===============================
-選手定義
-=============================== */
+/* ===== データ ===== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -111,12 +137,27 @@ const players=[
 "35 あやと","36 はる","37 かい","38 あらた","39 はると"
 ];
 
+const attackKeys=["CHA","SHO","HD_O","THP","LP"];
+const defenseKeys=["SZ","PO","HD_D","SL"];
+
+const labels={
+CHA:"【攻撃】ドリブルチャレンジ",
+SHO:"【攻撃】シュート",
+HD_O:"【攻撃】ヘディング",
+THP:"【攻撃】スルーパス",
+LP:"【攻撃】ロングパス",
+SZ:"【守備】ボール完全奪取",
+PO:"【守備】抜かれた数",
+HD_D:"【守備】ヘディングクリア",
+SL:"【守備】スライディング"
+};
+
+let records={};
 let playerState={};
+let currentMode="";
 let timerInterval=null;
 
-/* ===============================
-UI生成
-=============================== */
+/* ===== UI生成 ===== */
 
 const playerList=document.getElementById("playerList");
 
@@ -127,7 +168,6 @@ players.forEach(p=>{
     const check=document.createElement("input");
     check.type="checkbox";
     check.value=p;
-
     check.onchange=syncPlayerTimer;
 
     label.appendChild(check);
@@ -142,52 +182,114 @@ players.forEach(p=>{
 
     playerList.appendChild(label);
 
-    playerState[p]={
-        active:false,
-        time:0
-    };
+    playerState[p]={active:false,time:0};
+
+    records[p]={};
+    [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
 });
 
-/* ===============================
-入力開始
-=============================== */
+/* ===== 入力開始 ===== */
 
 function startInput(){
 
+    const mode=document.querySelector("input[name='mode']:checked");
+
+    if(!mode){
+        alert("入力タイプ選択");
+        return;
+    }
+
+    currentMode=mode.value;
+
     syncPlayerTimer();
 
-    if(timerInterval) return;
+    if(!timerInterval){
+        timerInterval=setInterval(()=>{
 
-    timerInterval=setInterval(()=>{
+            Object.keys(playerState).forEach(name=>{
+                if(playerState[name].active){
+                    playerState[name].time++;
+                    updateTimerUI(name);
+                }
+            });
 
-        Object.keys(playerState).forEach(name=>{
-            if(playerState[name].active){
-                playerState[name].time++;
-                updateTimerUI(name);
-            }
-        });
+        },1000);
+    }
 
-    },1000);
+    renderCounters();
 }
 
-/* ===============================
-チェック同期
-=============================== */
+/* ===== チェック同期 ===== */
 
 function syncPlayerTimer(){
 
     document.querySelectorAll("#playerList input").forEach(el=>{
-
-        const name=el.value;
-
-        playerState[name].active=el.checked;
-
+        playerState[el.value].active=el.checked;
     });
 }
 
-/* ===============================
-UI更新
-=============================== */
+/* ===== カウンタUI ===== */
+
+function renderCounters(){
+
+    inputArea.innerHTML="";
+
+    const checked=[...document.querySelectorAll("#playerList input:checked")];
+
+    const showAttack=currentMode==="attack"||currentMode==="both";
+    const showDefense=currentMode==="defense"||currentMode==="both";
+
+    checked.forEach(c=>{
+
+        const name=c.value;
+
+        const card=document.createElement("div");
+        card.className="card";
+
+        card.innerHTML=`<b>${name}</b>`;
+
+        if(showAttack){
+            attackKeys.forEach(k=>{
+                card.innerHTML+=counterHTML(name,k);
+            });
+        }
+
+        if(showDefense){
+            defenseKeys.forEach(k=>{
+                card.innerHTML+=counterHTML(name,k);
+            });
+        }
+
+        inputArea.appendChild(card);
+    });
+}
+
+function counterHTML(name,key){
+    return `
+    <div class="counter">
+        <div style="flex:1">${labels[key]}</div>
+        <button onclick="change('${name}','${key}',-1)">-</button>
+        <div class="value" id="${name}_${key}">
+        ${records[name][key]}
+        </div>
+        <button onclick="change('${name}','${key}',1)">+</button>
+    </div>`;
+}
+
+/* ===== カウント ===== */
+
+function change(player,key,delta){
+
+    records[player][key]+=delta;
+
+    if(records[player][key]<0)
+        records[player][key]=0;
+
+    document.getElementById(`${player}_${key}`)
+        .innerText=records[player][key];
+}
+
+/* ===== タイマーUI ===== */
 
 function updateTimerUI(name){
 
@@ -196,21 +298,19 @@ function updateTimerUI(name){
     const m=Math.floor(sec/60);
     const s=sec%60;
 
-    const target=document.getElementById(
+    const el=document.getElementById(
         "timer_"+name.replace(" ","_")
     );
 
-    if(target){
-        target.innerText=
+    if(el){
+        el.innerText=
             String(m).padStart(2,"0")+
             ":"+
             String(s).padStart(2,"0");
     }
 }
 
-/* ===============================
-試合終了
-=============================== */
+/* ===== 試合終了 ===== */
 
 function finishMatch(){
 
@@ -222,23 +322,44 @@ function finishMatch(){
     Object.keys(playerState).forEach(name=>{
         playerState[name].active=false;
     });
+
+    alert("試合終了しました");
 }
 
-/* ===============================
-全クリア
-=============================== */
+/* ===== Excel出力 ===== */
+
+function exportStatsImage(){
+
+    alert("画像出力機能は簡易版環境では省略しています");
+}
+
+/* ===== 全クリア ===== */
 
 function clearAllData(){
 
     if(!confirm("全データをクリアしますか？")) return;
 
-    playerState={};
+    Object.keys(records).forEach(p=>{
+        [...attackKeys,...defenseKeys].forEach(k=>{
+            records[p][k]=0;
+        });
+    });
+
+    Object.values(playerState).forEach(st=>{
+        st.time=0;
+        st.active=false;
+    });
+
+    document.querySelectorAll(".value").forEach(el=>{
+        el.innerText="0";
+    });
+
+    document.querySelectorAll(".timer").forEach(el=>{
+        el.innerText="00:00";
+    });
 
     document.querySelectorAll("#playerList input")
     .forEach(el=>el.checked=false);
-
-    document.querySelectorAll(".timer")
-    .forEach(el=>el.innerText="00:00");
 }
 
 </script>
