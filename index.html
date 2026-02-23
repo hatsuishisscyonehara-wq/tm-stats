@@ -138,7 +138,7 @@ button{
 
 <div class="player-list" id="playerList"></div>
 
-<button class="primary" onclick="startInput()">入力開始</button>
+<button class="primary" onclick="startMatch()">試合開始</button>
 <button class="success" onclick="finishMatch()">試合終了</button>
 <button class="primary" onclick="clearPlayerSelection()">選手選択クリア</button>
 
@@ -184,6 +184,7 @@ let records={};
 let playerState={};
 let currentMode="";
 let timerInterval=null;
+let matchStarted=false;
 
 /* ===============================
 UI生成
@@ -219,10 +220,10 @@ players.forEach(p=>{
 });
 
 /* ===============================
-入力開始
+試合開始（改修①）
 =============================== */
 
-function startInput(){
+function startMatch(){
 
     const mode=document.querySelector("input[name='mode']:checked");
 
@@ -232,6 +233,7 @@ function startInput(){
     }
 
     currentMode=mode.value;
+    matchStarted=true;
 
     syncPlayerTimer();
 
@@ -252,7 +254,7 @@ function startInput(){
 }
 
 /* ===============================
-チェック同期
+チェック同期＋動的UI更新（改修②）
 =============================== */
 
 function syncPlayerTimer(){
@@ -260,6 +262,11 @@ function syncPlayerTimer(){
     document.querySelectorAll("#playerList input").forEach(el=>{
         playerState[el.value].active=el.checked;
     });
+
+    // 試合開始後はチェック変更でUIを動的更新
+    if(matchStarted){
+        renderCounters();
+    }
 }
 
 /* ===============================
@@ -357,7 +364,7 @@ function updateTimerUI(name){
         String(s).padStart(2,"0");
 }
 
-/* 試合終了 */
+/* 試合終了（改修②） */
 
 function finishMatch(){
 
@@ -367,6 +374,8 @@ function finishMatch(){
         clearInterval(timerInterval);
         timerInterval=null;
     }
+
+    matchStarted=false;
 
     Object.keys(playerState).forEach(name=>{
         playerState[name].active=false;
@@ -459,6 +468,9 @@ function clearAllData(){
 
     document.querySelectorAll("#playerList input")
     .forEach(el=>el.checked=false);
+
+    inputArea.innerHTML="";
+    matchStarted=false;
 }
 
 </script>
