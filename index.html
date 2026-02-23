@@ -2,84 +2,93 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ入力（現場最強版）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMスタッツ入力 Pro</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 
 body{
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
     background:#f3f4f6;
     margin:0;
     padding:8px;
 }
 
-/* --- UI --- */
-
 h2{
     text-align:center;
+    margin:8px 0;
 }
 
 .card{
     background:#fff;
-    padding:12px;
-    border-radius:14px;
-    margin-bottom:10px;
-    box-shadow:0 2px 8px rgba(0,0,0,.1);
-}
-
-button{
-    width:100%;
     padding:10px;
-    border:none;
-    border-radius:10px;
-    margin-top:8px;
-    font-size:15px;
-}
-
-/* --- 大タップ対応 --- */
-
-.counter{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    margin-top:6px;
-}
-
-.counter button{
-    width:42px;
-    height:42px;
-    font-size:20px;
-}
-
-.value{
-    width:36px;
-    text-align:center;
-    font-weight:bold;
+    border-radius:12px;
+    margin-bottom:8px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
 .player-list{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:6px;
-    max-height:220px;
+    gap:4px;
+    max-height:200px;
     overflow:auto;
+    font-size:14px;
+}
+
+.counter{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:4px;
+}
+
+.counter-name{flex:1;font-size:13px;}
+
+.counter button{
+    width:30px;
+    height:30px;
+    border:none;
+    border-radius:6px;
+    background:#e2e8f0;
     font-size:15px;
 }
 
-/* --- ボタン --- */
-
-.primary{background:#2563eb;color:white;}
-.success{background:#16a34a;color:white;}
+.value{
+    width:28px;
+    text-align:center;
+}
 
 .section-title{
     font-weight:bold;
-    margin-top:8px;
+    margin-top:6px;
+    margin-bottom:3px;
 }
 
-/* --- トースト --- */
+button{
+    width:100%;
+    padding:8px;
+    border:none;
+    border-radius:8px;
+    margin-top:6px;
+    font-size:14px;
+}
+
+.primary{background:#2563eb;color:#fff;}
+.success{background:#16a34a;color:#fff;}
+
+.terms{
+    margin:6px 0 8px 0;
+    font-size:12px;
+    background:#eef2f7;
+    padding:8px;
+    border-radius:8px;
+    line-height:1.5;
+}
+
+/* toast */
 
 #toast{
     position:fixed;
@@ -104,7 +113,7 @@ button{
 
 <body>
 
-<h2>TMスタッツ入力（現場最強版）</h2>
+<h2>TMスタッツ入力 Pro</h2>
 
 <div class="card">
 
@@ -116,8 +125,9 @@ button{
 
 <label>フォーメーション</label>
 <select id="formation">
-<option value="">選択</option>
+<option value="">選択してください</option>
 <option>4-2-1</option>
+<option>3-3-2</option>
 <option>3-3-1</option>
 <option>2-3-2</option>
 </select>
@@ -142,9 +152,7 @@ button{
 
 <script>
 
-/* -----------------------------
-選手
------------------------------ */
+/* ===== データ ===== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -170,23 +178,16 @@ HD_D:"HDクリア",
 SL:"スライディング"
 };
 
-/* -----------------------------
-状態
------------------------------ */
-
 let records={};
 let currentMode="";
 
-/* -----------------------------
-初期描画
------------------------------ */
+/* ===== UI生成 ===== */
 
 const playerList=document.getElementById("playerList");
 
 players.forEach(p=>{
     const label=document.createElement("label");
     const check=document.createElement("input");
-
     check.type="checkbox";
     check.value=p;
 
@@ -196,9 +197,7 @@ players.forEach(p=>{
     playerList.appendChild(label);
 });
 
-/* -----------------------------
-トースト
------------------------------ */
+/* ===== トースト ===== */
 
 function toast(msg){
     const t=document.getElementById("toast");
@@ -210,9 +209,7 @@ function toast(msg){
     },1500);
 }
 
-/* -----------------------------
-保存
------------------------------ */
+/* ===== 自動保存 ===== */
 
 function saveLocal(){
     localStorage.setItem("tm_records",JSON.stringify(records));
@@ -221,9 +218,7 @@ function saveLocal(){
     localStorage.setItem("tm_formation",formation.value);
 }
 
-/* -----------------------------
-復元
------------------------------ */
+/* ===== 復元 ===== */
 
 window.onload=function(){
 
@@ -235,9 +230,7 @@ window.onload=function(){
     formation.value=localStorage.getItem("tm_formation")||"";
 };
 
-/* -----------------------------
-入力開始
------------------------------ */
+/* ===== 入力開始 ===== */
 
 function startInput(){
 
@@ -263,13 +256,7 @@ function startInput(){
     inputArea.innerHTML="";
     termsArea.innerHTML="";
 
-    if(mode.value==="attack"){
-        termsArea.innerHTML="<div class='card'>攻撃スタッツ入力</div>";
-    }else{
-        termsArea.innerHTML="<div class='card'>守備スタッツ入力</div>";
-    }
-
-    const keys = mode.value==="attack" ? attackKeys : defenseKeys;
+    const keys = currentMode==="attack" ? attackKeys : defenseKeys;
 
     checked.forEach(c=>{
 
@@ -301,9 +288,7 @@ function startInput(){
     });
 }
 
-/* -----------------------------
-カウンター
------------------------------ */
+/* ===== カウンター ===== */
 
 function change(player,key,delta){
 
@@ -318,9 +303,7 @@ function change(player,key,delta){
     saveLocal();
 }
 
-/* -----------------------------
-Excel出力（最強互換）
------------------------------ */
+/* ===== Excel出力 ===== */
 
 function exportExcel(){
 
