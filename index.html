@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>スタッツ入力</title>
+<title>TMスタッツ Pro 完全版（画像出力削除）</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -91,12 +91,39 @@ button{
 .primary{background:#2563eb;color:#fff;}
 .success{background:#16a34a;color:#fff;}
 
+/* ===== README Modal ===== */
+
+#readmeModal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.6);
+}
+
+#readmeContent{
+    background:#fff;
+    margin:40px auto;
+    padding:20px;
+    width:90%;
+    max-height:80%;
+    overflow:auto;
+    border-radius:12px;
+}
+
 </style>
 </head>
 
 <body>
 
-<h2>スタッツ入力</h2>
+<!-- READMEリンク（最上部） -->
+<button class="primary" onclick="showReadme()" style="margin-bottom:8px;">
+📘 ReadMe（使い方説明）
+</button>
+
+<h2>TMスタッツ Pro</h2>
 
 <div class="card">
 
@@ -140,8 +167,6 @@ button{
 
 <button class="primary" onclick="startMatch()">試合開始</button>
 <button class="success" onclick="finishMatch()">試合終了</button>
-
-<!-- 改修①：全クリア（元の全クリア動作） -->
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
 </div>
@@ -152,10 +177,65 @@ button{
 <button class="success" onclick="exportExcel()">Excel出力</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
+<!-- README Modal -->
+<div id="readmeModal" onclick="closeReadme()">
+<div id="readmeContent" onclick="event.stopPropagation()"></div>
+</div>
+
 <script>
 
+/* ===== README TEXT ===== */
+
+const README_TEXT = `
+TMスタッツ Pro（少年サッカー試合スタッツ入力アプリ）
+
+■ 基本操作手順
+
+① 試合情報を入力
+・日にち
+・対戦相手（例：初石SSC1試合目）
+・フォーメーション（選択式）
+
+② 入力タイプ選択
+・攻撃
+・守備
+・攻撃守備両方
+
+③ 出場選手選択
+チェックを付けた選手が対象です。
+試合開始後も選手追加・削除が可能です。
+
+④ 試合開始
+・出場時間カウント開始
+・スタッツ入力UI生成
+
+⑤ スタッツ入力
+＋ボタン：カウント増加
+－ボタン：カウント減少（0以下にはなりません）
+
+⑥ 試合終了
+・カウント停止
+
+⑦ Excel出力
+・出場時間1秒以上の選手のみ出力
+
+※ページ更新するとデータは消えます。
+
+--------------------------------
+本アプリはブラウザ内動作型です。
+`;
+
+function showReadme(){
+    document.getElementById("readmeContent").innerText=README_TEXT;
+    document.getElementById("readmeModal").style.display="block";
+}
+
+function closeReadme(){
+    document.getElementById("readmeModal").style.display="none";
+}
+
 /* ===============================
-データ
+以下、元アプリロジック（変更なし）
 =============================== */
 
 const players=[
@@ -188,9 +268,7 @@ let currentMode="";
 let timerInterval=null;
 let matchStarted=false;
 
-/* ===============================
-UI生成
-=============================== */
+/* UI生成 */
 
 const playerList=document.getElementById("playerList");
 
@@ -221,9 +299,7 @@ players.forEach(p=>{
     [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
 });
 
-/* ===============================
-試合開始
-=============================== */
+/* 試合開始 */
 
 function startMatch(){
 
@@ -255,9 +331,7 @@ function startMatch(){
     renderCounters();
 }
 
-/* ===============================
-チェック同期（動的UI更新維持）
-=============================== */
+/* チェック同期（動的UI更新） */
 
 function syncPlayerTimer(){
 
@@ -270,9 +344,7 @@ function syncPlayerTimer(){
     }
 }
 
-/* ===============================
-出場選手クリア（全クリア統合）
-=============================== */
+/* 全クリア */
 
 function clearAllData(){
 
@@ -304,9 +376,7 @@ function clearAllData(){
     matchStarted=false;
 }
 
-/* ===============================
-カウンタUI
-=============================== */
+/* カウンタUI */
 
 function renderCounters(){
 
@@ -354,8 +424,6 @@ function counterHTML(name,key){
     </div>`;
 }
 
-/* カウント */
-
 function change(player,key,delta){
 
     records[player][key]+=delta;
@@ -366,8 +434,6 @@ function change(player,key,delta){
     document.getElementById(`${player}_${key}`)
         .innerText=records[player][key];
 }
-
-/* タイマーUI */
 
 function updateTimerUI(name){
 
@@ -382,8 +448,6 @@ function updateTimerUI(name){
         String(m).padStart(2,"0")+":"+
         String(s).padStart(2,"0");
 }
-
-/* 試合終了 */
 
 function finishMatch(){
 
@@ -400,10 +464,6 @@ function finishMatch(){
         playerState[name].active=false;
     });
 }
-
-/* ===============================
-Excel出力
-=============================== */
 
 function exportExcel(){
 
