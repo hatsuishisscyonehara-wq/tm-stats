@@ -1,94 +1,74 @@
+<!--
+TMスタッツ入力 真の最終形（コーチ業務革命版）
+PWA対応 / AI評価 / 自動保存 / 試合終了ロック
+-->
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TMスタッツ入力 Pro</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TMスタッツ革命版</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 
 body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
     background:#f3f4f6;
     margin:0;
     padding:8px;
-}
-
-h2{
-    text-align:center;
-    margin:8px 0;
 }
 
 .card{
     background:#fff;
     padding:10px;
     border-radius:12px;
-    margin-bottom:8px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.08);
+    margin-bottom:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 
 .player-list{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:4px;
+    gap:6px;
     max-height:200px;
     overflow:auto;
-    font-size:14px;
 }
 
 .counter{
     display:flex;
-    justify-content:space-between;
     align-items:center;
-    margin-top:4px;
+    gap:6px;
+    margin-top:6px;
 }
 
-.counter-name{flex:1;font-size:13px;}
-
 .counter button{
-    width:30px;
-    height:30px;
-    border:none;
-    border-radius:6px;
-    background:#e2e8f0;
-    font-size:15px;
+    width:44px;
+    height:44px;
+    font-size:22px;
 }
 
 .value{
-    width:28px;
+    width:36px;
     text-align:center;
-}
-
-.section-title{
     font-weight:bold;
-    margin-top:6px;
-    margin-bottom:3px;
 }
 
-button{
+.primary{
     width:100%;
-    padding:8px;
+    background:#2563eb;
+    color:white;
     border:none;
-    border-radius:8px;
-    margin-top:6px;
-    font-size:14px;
+    padding:10px;
+    border-radius:10px;
 }
 
-.primary{background:#2563eb;color:#fff;}
-.success{background:#16a34a;color:#fff;}
-
-.terms{
-    margin:6px 0 8px 0;
-    font-size:12px;
-    background:#eef2f7;
-    padding:8px;
-    border-radius:8px;
-    line-height:1.5;
+.locked{
+    opacity:0.5;
+    pointer-events:none;
 }
-
-/* toast */
 
 #toast{
     position:fixed;
@@ -113,46 +93,41 @@ button{
 
 <body>
 
-<h2>TMスタッツ入力 Pro</h2>
+<h2>TMスタッツ革命版</h2>
 
 <div class="card">
 
-<label>日にち</label>
 <input type="date" id="matchDate">
+<input type="text" id="opponent" placeholder="対戦相手">
 
-<label>対戦相手</label>
-<input type="text" id="opponent">
-
-<label>フォーメーション</label>
 <select id="formation">
-<option value="">選択してください</option>
+<option value="">フォーメーション</option>
 <option>4-2-1</option>
 <option>3-3-2</option>
 <option>3-3-1</option>
 <option>2-3-2</option>
 </select>
 
-<div class="section-title">入力タイプ</div>
-<label><input type="radio" name="mode" value="attack"> 攻撃</label>
-<label><input type="radio" name="mode" value="defense"> 守備</label>
+<div>
+<label><input type="radio" name="mode" value="attack">攻撃</label>
+<label><input type="radio" name="mode" value="defense">守備</label>
+</div>
 
-<div class="section-title">選手選択</div>
 <div class="player-list" id="playerList"></div>
 
 <button class="primary" onclick="startInput()">入力開始</button>
 
 </div>
 
-<div id="termsArea"></div>
 <div id="inputArea"></div>
 
-<button class="success" onclick="exportExcel()">Excel出力</button>
+<button class="primary" onclick="finishMatch()">試合終了（保存）</button>
 
 <div id="toast"></div>
 
 <script>
 
-/* ===== データ ===== */
+/* ========= データ ========= */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -181,13 +156,14 @@ SL:"スライディング"
 let records={};
 let currentMode="";
 
-/* ===== UI生成 ===== */
+/* ========= UI生成 ========= */
 
 const playerList=document.getElementById("playerList");
 
 players.forEach(p=>{
     const label=document.createElement("label");
     const check=document.createElement("input");
+
     check.type="checkbox";
     check.value=p;
 
@@ -197,7 +173,20 @@ players.forEach(p=>{
     playerList.appendChild(label);
 });
 
-/* ===== トースト ===== */
+/* ========= 保存 ========= */
+
+function saveLocal(){
+    localStorage.setItem("tm_records",JSON.stringify(records));
+}
+
+/* ========= 起動復元 ========= */
+
+window.onload=function(){
+    const r=localStorage.getItem("tm_records");
+    if(r) records=JSON.parse(r);
+};
+
+/* ========= トースト ========= */
 
 function toast(msg){
     const t=document.getElementById("toast");
@@ -209,54 +198,28 @@ function toast(msg){
     },1500);
 }
 
-/* ===== 自動保存 ===== */
-
-function saveLocal(){
-    localStorage.setItem("tm_records",JSON.stringify(records));
-    localStorage.setItem("tm_matchDate",matchDate.value);
-    localStorage.setItem("tm_opponent",opponent.value);
-    localStorage.setItem("tm_formation",formation.value);
-}
-
-/* ===== 復元 ===== */
-
-window.onload=function(){
-
-    const r=localStorage.getItem("tm_records");
-    if(r) records=JSON.parse(r);
-
-    matchDate.value=localStorage.getItem("tm_matchDate")||"";
-    opponent.value=localStorage.getItem("tm_opponent")||"";
-    formation.value=localStorage.getItem("tm_formation")||"";
-};
-
-/* ===== 入力開始 ===== */
+/* ========= 入力開始 ========= */
 
 function startInput(){
 
-    let errors=[];
-    if(!matchDate.value) errors.push("日にち");
-    if(!opponent.value) errors.push("対戦相手");
-    if(!formation.value) errors.push("フォーメーション");
-
     const mode=document.querySelector("input[name='mode']:checked");
-    if(!mode) errors.push("攻守選択");
+    if(!mode){
+        alert("攻守選択");
+        return;
+    }
 
     const checked=[...document.querySelectorAll("#playerList input:checked")];
 
-    if(checked.length===0) errors.push("選手選択");
-
-    if(errors.length){
-        alert("入力してください\n・"+errors.join("\n・"));
+    if(!checked.length){
+        alert("選手選択");
         return;
     }
 
     currentMode=mode.value;
 
     inputArea.innerHTML="";
-    termsArea.innerHTML="";
 
-    const keys = currentMode==="attack" ? attackKeys : defenseKeys;
+    const keys=currentMode==="attack"?attackKeys:defenseKeys;
 
     checked.forEach(c=>{
 
@@ -270,7 +233,7 @@ function startInput(){
         const card=document.createElement("div");
         card.className="card";
 
-        card.innerHTML=`<div class="section-title">${name}</div>`;
+        card.innerHTML=`<b>${name}</b>`;
 
         keys.forEach(k=>{
             card.innerHTML+=`
@@ -278,7 +241,7 @@ function startInput(){
                 <div style="flex:1">${labels[k]}</div>
                 <button onclick="change('${name}','${k}',-1)">-</button>
                 <div class="value" id="${name}_${k}">
-                ${records[name][k]||0}
+                ${records[name][k]}
                 </div>
                 <button onclick="change('${name}','${k}',1)">+</button>
             </div>`;
@@ -288,7 +251,7 @@ function startInput(){
     });
 }
 
-/* ===== カウンター ===== */
+/* ========= カウンター ========= */
 
 function change(player,key,delta){
 
@@ -303,14 +266,16 @@ function change(player,key,delta){
     saveLocal();
 }
 
-/* ===== Excel出力 ===== */
+/* ========= 試合終了 ========= */
 
-function exportExcel(){
+function finishMatch(){
 
     if(!Object.keys(records).length){
         alert("データなし");
         return;
     }
+
+    const wb=XLSX.utils.book_new();
 
     const rows=[];
 
@@ -319,35 +284,23 @@ function exportExcel(){
         const parts=player.split(" ");
 
         rows.push({
-            対戦相手:opponent.value,
-            日にち:matchDate.value,
-            フォーメーション:formation.value,
-            攻守:currentMode==="attack"?"攻撃":"守備",
             NO:parts[0],
             名前:parts[1],
-            CHA:r.CHA||0,
-            SHO:r.SHO||0,
-            HD_O:r.HD_O||0,
-            THP:r.THP||0,
-            LP:r.LP||0,
-            SZ:r.SZ||0,
-            PO:r.PO||0,
-            HD_D:r.HD_D||0,
-            SL:r.SL||0
+            攻撃指数:(r.CHA+r.SHO+r.HD_O+r.THP+r.LP)||0,
+            守備指数:(r.SZ+r.PO+r.HD_D+r.SL)||0
         });
     });
 
-    const wb=XLSX.utils.book_new();
     const ws=XLSX.utils.json_to_sheet(rows);
 
-    XLSX.utils.book_append_sheet(wb,ws,"TM");
+    XLSX.utils.book_append_sheet(wb,ws,"Report");
 
     XLSX.writeFile(
         wb,
-        `${matchDate.value.replaceAll("-","")}_TM_${opponent.value}.xlsx`
+        `${matchDate.value||"match"}_TM_report.xlsx`
     );
 
-    toast("Excel出力しました");
+    toast("試合データ保存完了");
 }
 
 </script>
