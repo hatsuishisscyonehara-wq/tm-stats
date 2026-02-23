@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 最終完全版</title>
+<title>TMスタッツ Pro 最終版（画像出力修正版）</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -21,7 +21,6 @@ body{
     padding:12px;
     border-radius:12px;
     margin-bottom:10px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
 .player-list{
@@ -30,7 +29,6 @@ body{
     gap:6px;
     max-height:220px;
     overflow:auto;
-    font-size:14px;
 }
 
 .timer{
@@ -75,7 +73,7 @@ button{
 
 <body>
 
-<h2>TMスタッツ Pro（最終完全版）</h2>
+<h2>TMスタッツ Pro（画像出力修正版）</h2>
 
 <div class="card">
 
@@ -86,13 +84,7 @@ button{
 <input type="text" id="opponent">
 
 <label>フォーメーション</label>
-<select id="formation">
-<option value="">フォーメーション選択</option>
-<option>4-2-1</option>
-<option>3-3-2</option>
-<option>3-3-1</option>
-<option>2-3-2</option>
-</select>
+<input type="text" id="formation">
 
 </div>
 
@@ -108,8 +100,7 @@ button{
 
 <div class="card">
 
-<div>選手選択（出場時間カウント）</div>
-
+<div>選手選択</div>
 <div class="player-list" id="playerList"></div>
 
 <button class="primary" onclick="startInput()">入力開始</button>
@@ -125,9 +116,7 @@ button{
 
 <script>
 
-/* ===============================
-データ定義
-=============================== */
+/* ===== データ ===== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -158,9 +147,7 @@ let playerState={};
 let currentMode="";
 let timerInterval=null;
 
-/* ===============================
-UI生成
-=============================== */
+/* UI生成 */
 
 const playerList=document.getElementById("playerList");
 
@@ -191,9 +178,7 @@ players.forEach(p=>{
     [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
 });
 
-/* ===============================
-入力開始
-=============================== */
+/* 入力開始 */
 
 function startInput(){
 
@@ -224,9 +209,7 @@ function startInput(){
     renderCounters();
 }
 
-/* ===============================
-チェック同期
-=============================== */
+/* チェック同期 */
 
 function syncPlayerTimer(){
 
@@ -235,9 +218,7 @@ function syncPlayerTimer(){
     });
 }
 
-/* ===============================
-カウンタUI
-=============================== */
+/* カウンタ表示 */
 
 function renderCounters(){
 
@@ -285,9 +266,7 @@ function counterHTML(name,key){
     </div>`;
 }
 
-/* ===============================
-カウント
-=============================== */
+/* カウント */
 
 function change(player,key,delta){
 
@@ -300,9 +279,7 @@ function change(player,key,delta){
         .innerText=records[player][key];
 }
 
-/* ===============================
-タイマーUI
-=============================== */
+/* タイマーUI */
 
 function updateTimerUI(name){
 
@@ -318,9 +295,7 @@ function updateTimerUI(name){
         String(s).padStart(2,"0");
 }
 
-/* ===============================
-試合終了
-=============================== */
+/* 試合終了 */
 
 function finishMatch(){
 
@@ -334,23 +309,12 @@ function finishMatch(){
     });
 }
 
-/* ===============================
-出力フィルタ（1秒以上のみ）
-=============================== */
-
-function getExportPlayers(){
-
-    return Object.keys(playerState)
-    .filter(name=>playerState[name].time>=1);
-}
-
-/* ===============================
-Excel出力
-=============================== */
+/* ===== Excel出力 ===== */
 
 function exportExcel(){
 
-    const exportPlayers=getExportPlayers();
+    const exportPlayers=Object.keys(playerState)
+        .filter(name=>playerState[name].time>=1);
 
     if(!exportPlayers.length){
         alert("出場時間1秒以上の選手がいません");
@@ -395,30 +359,82 @@ function exportExcel(){
 
     XLSX.writeFile(
         wb,
-        (matchDate.value||"match").replaceAll("-","")+
-        "_TM.xlsx"
+        (matchDate.value||"match").replaceAll("-","")+"_TM.xlsx"
     );
 }
 
-/* ===============================
-画像出力（簡易）
-=============================== */
+/* ===== 画像出力（完全実装） ===== */
 
 function exportImage(){
 
-    alert("画像出力はブラウザCanvas保存仕様です");
+    const exportPlayers=Object.keys(playerState)
+        .filter(name=>playerState[name].time>=1);
 
+    if(!exportPlayers.length){
+        alert("出場時間1秒以上の選手がいません");
+        return;
+    }
+
+    const canvas=document.createElement("canvas");
+    canvas.width=900;
+    canvas.height=1500;
+
+    const ctx=canvas.getContext("2d");
+
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="#000000";
+    ctx.font="20px sans-serif";
+
+    let y=40;
+
+    ctx.fillText("TMスタッツ結果",40,y); y+=40;
+
+    exportPlayers.forEach(player=>{
+
+        const r=records[player];
+        const parts=player.split(" ");
+
+        const sec=playerState[player].time;
+        const m=Math.floor(sec/60);
+        const s=sec%60;
+
+        ctx.fillText(`■ ${parts[0]} ${parts[1]}`,40,y);
+        y+=30;
+
+        ctx.fillText(`出場時間 ${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,60,y);
+        y+=30;
+
+        Object.keys(labels).forEach(k=>{
+            ctx.fillText(
+                labels[k]+":"+(r[k]||0),
+                60,y
+            );
+            y+=25;
+        });
+
+        y+=20;
+    });
+
+    const link=document.createElement("a");
+    link.download="TM_stats.png";
+    link.href=canvas.toDataURL("image/png");
+
+    link.click();
 }
 
-/* ===============================
-全クリア
-=============================== */
+/* 全クリア */
 
 function clearAllData(){
 
     if(!confirm("全データをクリアしますか？")) return;
 
-    records={};
+    Object.keys(records).forEach(p=>{
+        [...attackKeys,...defenseKeys].forEach(k=>{
+            records[p][k]=0;
+        });
+    });
 
     Object.values(playerState).forEach(st=>{
         st.time=0;
