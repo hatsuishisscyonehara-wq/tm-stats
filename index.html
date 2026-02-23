@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ入力 Pro</title>
+<title>TMスタッツ入力 Pro 完全版</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -79,17 +79,6 @@ button{
 .primary{background:#2563eb;color:#fff;}
 .success{background:#16a34a;color:#fff;}
 
-.terms{
-    margin:6px 0 8px 0;
-    font-size:12px;
-    background:#eef2f7;
-    padding:8px;
-    border-radius:8px;
-    line-height:1.5;
-}
-
-/* toast */
-
 #toast{
     position:fixed;
     bottom:20px;
@@ -147,14 +136,13 @@ button{
 <div id="inputArea"></div>
 
 <button class="success" onclick="finishMatch()">Excel出力</button>
-
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
 <div id="toast"></div>
 
 <script>
 
-/* ========= データ ========= */
+/* ===== データ ===== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -183,7 +171,7 @@ SL:"スライディング"
 let records={};
 let currentMode="";
 
-/* ========= UI生成 ========= */
+/* ===== UI生成 ===== */
 
 const playerList=document.getElementById("playerList");
 
@@ -200,20 +188,20 @@ players.forEach(p=>{
     playerList.appendChild(label);
 });
 
-/* ========= 保存 ========= */
+/* ===== 保存 ===== */
 
 function saveLocal(){
     localStorage.setItem("tm_records",JSON.stringify(records));
 }
 
-/* ========= 復元 ========= */
+/* ===== 復元 ===== */
 
 window.onload=function(){
     const r=localStorage.getItem("tm_records");
     if(r) records=JSON.parse(r);
 };
 
-/* ========= トースト ========= */
+/* ===== トースト ===== */
 
 function toast(msg){
     const t=document.getElementById("toast");
@@ -225,7 +213,7 @@ function toast(msg){
     },1500);
 }
 
-/* ========= 入力開始 ========= */
+/* ===== 入力開始 ===== */
 
 function startInput(){
 
@@ -278,7 +266,7 @@ function startInput(){
     });
 }
 
-/* ========= カウンター ========= */
+/* ===== カウンター ===== */
 
 function change(player,key,delta){
 
@@ -293,7 +281,7 @@ function change(player,key,delta){
     saveLocal();
 }
 
-/* ========= Excel出力（前仕様） ========= */
+/* ===== Excel出力（前仕様） ===== */
 
 function finishMatch(){
 
@@ -339,9 +327,13 @@ function finishMatch(){
     );
 
     toast("Excel出力しました");
+
+    setTimeout(()=>{
+        clearAllData();
+    },500);
 }
 
-/* ========= 全クリア ========= */
+/* ===== 全クリア ===== */
 
 function clearAllData(){
 
@@ -352,9 +344,6 @@ function clearAllData(){
     records={};
 
     localStorage.removeItem("tm_records");
-    localStorage.removeItem("tm_matchDate");
-    localStorage.removeItem("tm_opponent");
-    localStorage.removeItem("tm_formation");
 
     document.querySelectorAll(".value").forEach(el=>{
         el.innerText="0";
