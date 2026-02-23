@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 完全版</title>
+<title>TMスタッツ Pro 完全版（画像出力削除）</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -75,7 +75,7 @@ button{
 
 <body>
 
-<h2>TMスタッツ</h2>
+<h2>TMスタッツ Pro</h2>
 
 <div class="card">
 
@@ -114,7 +114,6 @@ button{
 <div id="inputArea"></div>
 
 <button class="success" onclick="exportExcel()">Excel出力</button>
-<button class="primary" onclick="exportImage()">画像出力</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
 <script>
@@ -379,95 +378,6 @@ function exportExcel(){
         wb,
         `${yyyymmdd}_${opponentName}.xlsx`
     );
-}
-
-/* ===============================
-画像出力（最終版）
-=============================== */
-
-function exportImage(){
-
-    const exportPlayers=Object.keys(playerState)
-        .filter(name=>playerState[name].time>=1);
-
-    if(!exportPlayers.length){
-        alert("出場時間1秒以上の選手がいません");
-        return;
-    }
-
-    const canvas=document.createElement("canvas");
-    canvas.width=900;
-    canvas.height=1600;
-
-    const ctx=canvas.getContext("2d");
-
-    ctx.fillStyle="#ffffff";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-
-    ctx.fillStyle="#000000";
-    ctx.font="18px sans-serif";
-
-    let y=40;
-
-    const yyyymmdd=(matchDate.value||"").replaceAll("-","");
-
-    let modeText="";
-    if(currentMode==="attack") modeText="攻撃";
-    else if(currentMode==="defense") modeText="守備";
-    else modeText="攻撃守備両方";
-
-    ctx.fillText("◆日にち",40,y); y+=30;
-    ctx.fillText(yyyymmdd,40,y); y+=40;
-
-    ctx.fillText("◆対戦相手",40,y); y+=30;
-    ctx.fillText(opponent.value||"",40,y); y+=40;
-
-    ctx.fillText("◆フォーメーション",40,y); y+=30;
-    ctx.fillText(formation.value||"",40,y); y+=40;
-
-    ctx.fillText("◆攻撃/守備選択",40,y); y+=30;
-    ctx.fillText(modeText,40,y); y+=50;
-
-    ctx.fillText("◆スタッツ結果",40,y);
-    y+=40;
-
-    exportPlayers.forEach(player=>{
-
-        const r=records[player];
-        const parts=player.split(" ");
-
-        const sec=playerState[player].time;
-        const m=Math.floor(sec/60);
-        const s=sec%60;
-
-        ctx.fillText(`■ ${parts[0]} ${parts[1]}`,40,y);
-        y+=30;
-
-        ctx.fillText(
-            `出場時間 ${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
-            60,y
-        );
-        y+=30;
-
-        Object.keys(labels).forEach(k=>{
-            ctx.fillText(
-                labels[k]+":"+(r[k]||0),
-                60,y
-            );
-            y+=25;
-        });
-
-        y+=20;
-    });
-
-    const yyyymmddFile=(matchDate.value||"").replaceAll("-","");
-    const opponentFile=(opponent.value||"match").replace(/\s+/g,"");
-
-    const link=document.createElement("a");
-    link.download=`${yyyymmddFile}_${opponentFile}.png`;
-    link.href=canvas.toDataURL("image/png");
-
-    link.click();
 }
 
 /* 全クリア */
