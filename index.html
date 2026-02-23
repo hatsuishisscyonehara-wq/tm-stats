@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ入力 Pro</title>
+<title>TMスタッツ入力 Pro 完全版</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -58,15 +58,12 @@ input, select{
     margin-top:4px;
 }
 
-.counter-name{flex:1;font-size:13px;}
-
 .counter button{
     width:30px;
     height:30px;
     border:none;
     border-radius:6px;
     background:#e2e8f0;
-    font-size:15px;
 }
 
 .value{
@@ -157,6 +154,7 @@ button{
 <div id="inputArea"></div>
 
 <button class="success" onclick="finishMatch()">Excel出力</button>
+<button class="primary" onclick="exportStatsImage()">画像出力（LINE共有）</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
 <div id="toast"></div>
@@ -192,7 +190,7 @@ SL:"【守備】スライディング"
 let records={};
 let currentMode="";
 
-/* ===== UI生成 ===== */
+/* UI生成 */
 
 const playerList=document.getElementById("playerList");
 
@@ -209,13 +207,13 @@ players.forEach(p=>{
     playerList.appendChild(label);
 });
 
-/* ===== 保存 ===== */
+/* 保存 */
 
 function saveLocal(){
     localStorage.setItem("tm_records",JSON.stringify(records));
 }
 
-/* ===== 入力開始 ===== */
+/* 入力開始 */
 
 function startInput(){
 
@@ -281,7 +279,7 @@ function counterHTML(name,key){
     </div>`;
 }
 
-/* ===== カウンター ===== */
+/* カウンター */
 
 function change(player,key,delta){
 
@@ -296,7 +294,7 @@ function change(player,key,delta){
     saveLocal();
 }
 
-/* ===== Excel出力（前仕様） ===== */
+/* Excel出力 */
 
 function finishMatch(){
 
@@ -348,7 +346,63 @@ function finishMatch(){
     },500);
 }
 
-/* ===== 全クリア ===== */
+/* ⭐ 画像出力（LINE共有用） */
+
+function exportStatsImage(){
+
+    if(!Object.keys(records).length){
+        alert("データなし");
+        return;
+    }
+
+    const canvas=document.createElement("canvas");
+    canvas.width=800;
+    canvas.height=1000;
+
+    const ctx=canvas.getContext("2d");
+
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    ctx.fillStyle="#000000";
+    ctx.font="20px sans-serif";
+
+    let y=40;
+
+    ctx.fillText("TMスタッツ結果",30,y);
+    y+=40;
+
+    Object.keys(records).forEach(player=>{
+        const r=records[player];
+        const parts=player.split(" ");
+
+        const attackScore=
+            (r.CHA||0)+(r.SHO||0)+(r.HD_O||0)+(r.THP||0)+(r.LP||0);
+
+        const defenseScore=
+            (r.SZ||0)+(r.PO||0)+(r.HD_D||0)+(r.SL||0);
+
+        ctx.fillText(
+            `${parts[0]} ${parts[1]} ｜ 攻撃:${attackScore} 守備:${defenseScore}`,
+            30,
+            y
+        );
+
+        y+=30;
+    });
+
+    const link=document.createElement("a");
+    link.download="TM_stats.png";
+    link.href=canvas.toDataURL("image/png");
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast("画像出力しました");
+}
+
+/* 全クリア */
 
 function clearAllData(){
 
@@ -366,7 +420,7 @@ function clearAllData(){
     toast("全データをクリアしました");
 }
 
-/* ===== トースト ===== */
+/* トースト */
 
 function toast(msg){
     const t=document.getElementById("toast");
@@ -382,4 +436,3 @@ function toast(msg){
 
 </body>
 </html>
-
