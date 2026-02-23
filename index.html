@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ入力 Pro 完全版</title>
+<title>TMスタッツ入力 Pro</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -18,7 +18,6 @@ body{
 
 h2{
     text-align:center;
-    margin:8px 0;
 }
 
 .card{
@@ -28,8 +27,6 @@ h2{
     margin-bottom:10px;
     box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
-
-/* ★ 入力情報UI改善 */
 
 .input-group{
     display:flex;
@@ -44,8 +41,6 @@ input, select{
     border:1px solid #ccc;
     font-size:14px;
 }
-
-/* player list */
 
 .player-list{
     display:grid;
@@ -120,12 +115,11 @@ button{
 
 <body>
 
-<h2>TMスタッツ入力 Pro_v2</h2>
+<h2>TMスタッツ入力 Pro</h2>
 
-<!-- ★ 入力情報カード（UI改善） -->
 <div class="card">
 
-<div class="section-title">試合基本情報入力</div>
+<div class="section-title">試合基本情報</div>
 
 <div class="input-group">
 
@@ -133,7 +127,7 @@ button{
 <input type="date" id="matchDate">
 
 <label>対戦相手</label>
-<input type="text" id="opponent" placeholder="対戦相手を入力">
+<input type="text" id="opponent" placeholder="対戦相手">
 
 <label>フォーメーション</label>
 <select id="formation">
@@ -146,9 +140,11 @@ button{
 
 </div>
 
-<div class="section-title">入力タイプ</div>
+<div class="section-title">入力タイプ（3択）</div>
+
 <label><input type="radio" name="mode" value="attack"> 攻撃</label>
 <label><input type="radio" name="mode" value="defense"> 守備</label>
+<label><input type="radio" name="mode" value="both"> 両方</label>
 
 <div class="section-title">選手選択</div>
 <div class="player-list" id="playerList"></div>
@@ -167,7 +163,7 @@ button{
 
 <script>
 
-/* ===== データ ===== */
+/* ========= データ ========= */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -196,7 +192,7 @@ SL:"スライディング"
 let records={};
 let currentMode="";
 
-/* UI生成 */
+/* ===== UI生成 ===== */
 
 const playerList=document.getElementById("playerList");
 
@@ -213,38 +209,19 @@ players.forEach(p=>{
     playerList.appendChild(label);
 });
 
-/* 保存 */
+/* ===== 保存 ===== */
 
 function saveLocal(){
     localStorage.setItem("tm_records",JSON.stringify(records));
 }
 
-/* 復元 */
-
-window.onload=function(){
-    const r=localStorage.getItem("tm_records");
-    if(r) records=JSON.parse(r);
-};
-
-/* トースト */
-
-function toast(msg){
-    const t=document.getElementById("toast");
-    t.innerText=msg;
-    t.classList.add("show");
-
-    setTimeout(()=>{
-        t.classList.remove("show");
-    },1500);
-}
-
-/* 入力開始 */
+/* ===== 入力開始 ===== */
 
 function startInput(){
 
     const mode=document.querySelector("input[name='mode']:checked");
     if(!mode){
-        alert("攻守選択");
+        alert("入力タイプ選択");
         return;
     }
 
@@ -258,8 +235,6 @@ function startInput(){
     currentMode=mode.value;
 
     inputArea.innerHTML="";
-
-    const keys=currentMode==="attack"?attackKeys:defenseKeys;
 
     checked.forEach(c=>{
 
@@ -275,23 +250,38 @@ function startInput(){
 
         card.innerHTML=`<b>${name}</b>`;
 
-        keys.forEach(k=>{
-            card.innerHTML+=`
-            <div class="counter">
-                <div style="flex:1">${labels[k]}</div>
-                <button onclick="change('${name}','${k}',-1)">-</button>
-                <div class="value" id="${name}_${k}">
-                ${records[name][k]}
-                </div>
-                <button onclick="change('${name}','${k}',1)">+</button>
-            </div>`;
-        });
+        const showAttack = currentMode==="attack" || currentMode==="both";
+        const showDefense = currentMode==="defense" || currentMode==="both";
+
+        if(showAttack){
+            attackKeys.forEach(k=>{
+                card.innerHTML+=counterHTML(name,k);
+            });
+        }
+
+        if(showDefense){
+            defenseKeys.forEach(k=>{
+                card.innerHTML+=counterHTML(name,k);
+            });
+        }
 
         inputArea.appendChild(card);
     });
 }
 
-/* カウンター */
+function counterHTML(name,key){
+    return `
+    <div class="counter">
+        <div style="flex:1">${labels[key]}</div>
+        <button onclick="change('${name}','${key}',-1)">-</button>
+        <div class="value" id="${name}_${key}">
+        ${records[name][key]}
+        </div>
+        <button onclick="change('${name}','${key}',1)">+</button>
+    </div>`;
+}
+
+/* ===== カウンター ===== */
 
 function change(player,key,delta){
 
@@ -306,7 +296,7 @@ function change(player,key,delta){
     saveLocal();
 }
 
-/* Excel出力（前仕様維持） */
+/* ===== Excel出力（前仕様） ===== */
 
 function finishMatch(){
 
@@ -325,7 +315,7 @@ function finishMatch(){
             対戦相手:opponent.value||"",
             日にち:matchDate.value||"",
             フォーメーション:formation.value||"",
-            攻守:currentMode==="attack"?"攻撃":"守備",
+            攻守:currentMode,
             選手NO:parts[0],
             選手名:parts[1],
             CHA:r.CHA||0,
@@ -358,7 +348,7 @@ function finishMatch(){
     },500);
 }
 
-/* 全クリア */
+/* ===== 全クリア ===== */
 
 function clearAllData(){
 
@@ -367,7 +357,6 @@ function clearAllData(){
     }
 
     records={};
-
     localStorage.removeItem("tm_records");
 
     document.querySelectorAll(".value").forEach(el=>{
@@ -375,6 +364,18 @@ function clearAllData(){
     });
 
     toast("全データをクリアしました");
+}
+
+/* ===== トースト ===== */
+
+function toast(msg){
+    const t=document.getElementById("toast");
+    t.innerText=msg;
+    t.classList.add("show");
+
+    setTimeout(()=>{
+        t.classList.remove("show");
+    },1500);
 }
 
 </script>
