@@ -1,74 +1,94 @@
-<!--
-TMスタッツ入力 真の最終形（コーチ業務革命版）
-PWA対応 / AI評価 / 自動保存 / 試合終了ロック
--->
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ革命版</title>
+<title>TMスタッツ入力 Pro</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
 
 body{
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
     background:#f3f4f6;
     margin:0;
     padding:8px;
+}
+
+h2{
+    text-align:center;
+    margin:8px 0;
 }
 
 .card{
     background:#fff;
     padding:10px;
     border-radius:12px;
-    margin-bottom:10px;
-    box-shadow:0 2px 8px rgba(0,0,0,.1);
+    margin-bottom:8px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
 .player-list{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:6px;
+    gap:4px;
     max-height:200px;
     overflow:auto;
+    font-size:14px;
 }
 
 .counter{
     display:flex;
+    justify-content:space-between;
     align-items:center;
-    gap:6px;
-    margin-top:6px;
+    margin-top:4px;
 }
 
+.counter-name{flex:1;font-size:13px;}
+
 .counter button{
-    width:44px;
-    height:44px;
-    font-size:22px;
+    width:30px;
+    height:30px;
+    border:none;
+    border-radius:6px;
+    background:#e2e8f0;
+    font-size:15px;
 }
 
 .value{
-    width:36px;
+    width:28px;
     text-align:center;
+}
+
+.section-title{
     font-weight:bold;
+    margin-top:6px;
+    margin-bottom:3px;
 }
 
-.primary{
+button{
     width:100%;
-    background:#2563eb;
-    color:white;
+    padding:8px;
     border:none;
-    padding:10px;
-    border-radius:10px;
+    border-radius:8px;
+    margin-top:6px;
+    font-size:14px;
 }
 
-.locked{
-    opacity:0.5;
-    pointer-events:none;
+.primary{background:#2563eb;color:#fff;}
+.success{background:#16a34a;color:#fff;}
+
+.terms{
+    margin:6px 0 8px 0;
+    font-size:12px;
+    background:#eef2f7;
+    padding:8px;
+    border-radius:8px;
+    line-height:1.5;
 }
+
+/* toast */
 
 #toast{
     position:fixed;
@@ -93,35 +113,42 @@ body{
 
 <body>
 
-<h2>TMスタッツ革命版</h2>
+<h2>TMスタッツ入力 Pro</h2>
 
 <div class="card">
 
+<label>日にち</label>
 <input type="date" id="matchDate">
-<input type="text" id="opponent" placeholder="対戦相手">
 
+<label>対戦相手</label>
+<input type="text" id="opponent">
+
+<label>フォーメーション</label>
 <select id="formation">
-<option value="">フォーメーション</option>
+<option value="">選択してください</option>
 <option>4-2-1</option>
 <option>3-3-2</option>
 <option>3-3-1</option>
 <option>2-3-2</option>
 </select>
 
-<div>
-<label><input type="radio" name="mode" value="attack">攻撃</label>
-<label><input type="radio" name="mode" value="defense">守備</label>
-</div>
+<div class="section-title">入力タイプ</div>
+<label><input type="radio" name="mode" value="attack"> 攻撃</label>
+<label><input type="radio" name="mode" value="defense"> 守備</label>
 
+<div class="section-title">選手選択</div>
 <div class="player-list" id="playerList"></div>
 
 <button class="primary" onclick="startInput()">入力開始</button>
 
 </div>
 
+<div id="termsArea"></div>
 <div id="inputArea"></div>
 
-<button class="primary" onclick="finishMatch()">試合終了（保存）</button>
+<button class="success" onclick="finishMatch()">Excel出力</button>
+
+<button class="primary" onclick="clearAllData()">全クリア</button>
 
 <div id="toast"></div>
 
@@ -179,7 +206,7 @@ function saveLocal(){
     localStorage.setItem("tm_records",JSON.stringify(records));
 }
 
-/* ========= 起動復元 ========= */
+/* ========= 復元 ========= */
 
 window.onload=function(){
     const r=localStorage.getItem("tm_records");
@@ -266,7 +293,7 @@ function change(player,key,delta){
     saveLocal();
 }
 
-/* ========= 試合終了 ========= */
+/* ========= Excel出力（前仕様） ========= */
 
 function finishMatch(){
 
@@ -275,8 +302,6 @@ function finishMatch(){
         return;
     }
 
-    const wb=XLSX.utils.book_new();
-
     const rows=[];
 
     Object.keys(records).forEach(player=>{
@@ -284,23 +309,58 @@ function finishMatch(){
         const parts=player.split(" ");
 
         rows.push({
-            NO:parts[0],
-            名前:parts[1],
-            攻撃指数:(r.CHA+r.SHO+r.HD_O+r.THP+r.LP)||0,
-            守備指数:(r.SZ+r.PO+r.HD_D+r.SL)||0
+            対戦相手:opponent.value||"",
+            日にち:matchDate.value||"",
+            フォーメーション:formation.value||"",
+            攻守:currentMode==="attack"?"攻撃":"守備",
+            選手NO:parts[0],
+            選手名:parts[1],
+            CHA:r.CHA||0,
+            SHO:r.SHO||0,
+            "HD(攻)":r.HD_O||0,
+            THP:r.THP||0,
+            LP:r.LP||0,
+            SZ:r.SZ||0,
+            PO:r.PO||0,
+            "HD(守)":r.HD_D||0,
+            SL:r.SL||0
         });
     });
 
+    const wb=XLSX.utils.book_new();
     const ws=XLSX.utils.json_to_sheet(rows);
 
-    XLSX.utils.book_append_sheet(wb,ws,"Report");
+    XLSX.utils.book_append_sheet(wb,ws,"TM");
 
     XLSX.writeFile(
         wb,
-        `${matchDate.value||"match"}_TM_report.xlsx`
+        (matchDate.value||"match").replaceAll("-","")+
+        "_TM_"+(opponent.value||"")+".xlsx"
     );
 
-    toast("試合データ保存完了");
+    toast("Excel出力しました");
+}
+
+/* ========= 全クリア ========= */
+
+function clearAllData(){
+
+    if(!confirm("入力内容を全てクリアしますか？")){
+        return;
+    }
+
+    records={};
+
+    localStorage.removeItem("tm_records");
+    localStorage.removeItem("tm_matchDate");
+    localStorage.removeItem("tm_opponent");
+    localStorage.removeItem("tm_formation");
+
+    document.querySelectorAll(".value").forEach(el=>{
+        el.innerText="0";
+    });
+
+    toast("全データをクリアしました");
 }
 
 </script>
