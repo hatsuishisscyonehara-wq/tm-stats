@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 最終完全版</title>
+<title>TMスタッツ Pro 完全版</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
+
 body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
     background:#f3f4f6;
@@ -20,14 +21,36 @@ body{
     padding:12px;
     border-radius:12px;
     margin-bottom:10px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
 .player-list{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:6px;
-    max-height:220px;
+    gap:4px;
+    max-height:200px;
     overflow:auto;
+    font-size:14px;
+}
+
+.counter{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:4px;
+}
+
+.counter button{
+    width:32px;
+    height:32px;
+    border:none;
+    border-radius:6px;
+    background:#e2e8f0;
+}
+
+.value{
+    width:30px;
+    text-align:center;
 }
 
 .timer{
@@ -46,12 +69,13 @@ button{
 
 .primary{background:#2563eb;color:#fff;}
 .success{background:#16a34a;color:#fff;}
+
 </style>
 </head>
 
 <body>
 
-<h2>TMスタッツ Pro（画像フォーマット固定版）</h2>
+<h2>TMスタッツ</h2>
 
 <div class="card">
 
@@ -78,7 +102,8 @@ button{
 
 <div class="card">
 
-<div>選手選択</div>
+<div>選手選択（出場時間カウント）</div>
+
 <div class="player-list" id="playerList"></div>
 
 <button class="primary" onclick="startInput()">入力開始</button>
@@ -357,7 +382,7 @@ function exportExcel(){
 }
 
 /* ===============================
-画像出力（フォーマット固定）
+画像出力（最終版）
 =============================== */
 
 function exportImage(){
