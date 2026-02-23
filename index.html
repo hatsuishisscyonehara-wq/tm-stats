@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 完全版</title>
+<title>スタッツ入力アプリ</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
@@ -105,7 +105,7 @@ button{
 
 <body>
 
-<h2>TMスタッツ入力 Pro</h2>
+<h2>スタッツ入力アプリ</h2>
 
 <div class="card">
 
@@ -116,7 +116,7 @@ button{
 <input type="date" id="matchDate">
 
 <label>対戦相手</label>
-<input type="text" id="opponent" placeholder="対戦相手">
+<input type="text" id="opponent">
 
 <label>フォーメーション</label>
 <select id="formation">
@@ -184,21 +184,6 @@ let currentMode="";
 
 const playerList=document.getElementById("playerList");
 
-/* Allクリア */
-
-const allClearLabel=document.createElement("label");
-const allClearCheck=document.createElement("input");
-
-allClearCheck.type="checkbox";
-allClearCheck.onchange=function(){
-    document.querySelectorAll("#playerList input")
-    .forEach(el=>el.checked=false);
-};
-
-allClearLabel.appendChild(allClearCheck);
-allClearLabel.append(" Allクリア");
-playerList.appendChild(allClearLabel);
-
 players.forEach(p=>{
     const label=document.createElement("label");
     const check=document.createElement("input");
@@ -217,6 +202,7 @@ players.forEach(p=>{
 function startInput(){
 
     const mode=document.querySelector("input[name='mode']:checked");
+
     if(!mode){
         alert("入力タイプ選択");
         return;
@@ -339,7 +325,7 @@ function finishMatch(){
     setTimeout(clearAllData,500);
 }
 
-/* ===== 画像出力 ===== */
+/* ===== 画像出力（モード別） ===== */
 
 function exportStatsImage(){
 
@@ -382,6 +368,9 @@ function exportStatsImage(){
 
     ctx.font="14px sans-serif";
 
+    const showAttack=currentMode==="attack"||currentMode==="both";
+    const showDefense=currentMode==="defense"||currentMode==="both";
+
     Object.keys(records).forEach(player=>{
 
         const r=records[player];
@@ -390,17 +379,26 @@ function exportStatsImage(){
         ctx.fillText(`■ ${parts[0]} ${parts[1]}`,40,y);
         y+=25;
 
-        const stats=[
-            `【攻撃】ドリブルチャレンジ:${r.CHA||0}`,
-            `【攻撃】シュート:${r.SHO||0}`,
-            `【攻撃】ヘディング:${r.HD_O||0}`,
-            `【攻撃】スルーパス:${r.THP||0}`,
-            `【攻撃】ロングパス:${r.LP||0}`,
-            `【守備】ボール完全奪取:${r.SZ||0}`,
-            `【守備】抜かれた数:${r.PO||0}`,
-            `【守備】ヘディングクリア:${r.HD_D||0}`,
-            `【守備】スライディング:${r.SL||0}`
-        ];
+        let stats=[];
+
+        if(showAttack){
+            stats.push(
+                `【攻撃】ドリブルチャレンジ:${r.CHA||0}`,
+                `【攻撃】シュート:${r.SHO||0}`,
+                `【攻撃】ヘディング:${r.HD_O||0}`,
+                `【攻撃】スルーパス:${r.THP||0}`,
+                `【攻撃】ロングパス:${r.LP||0}`
+            );
+        }
+
+        if(showDefense){
+            stats.push(
+                `【守備】ボール完全奪取:${r.SZ||0}`,
+                `【守備】抜かれた数:${r.PO||0}`,
+                `【守備】ヘディングクリア:${r.HD_D||0}`,
+                `【守備】スライディング:${r.SL||0}`
+            );
+        }
 
         stats.forEach(s=>{
             ctx.fillText(s,60,y);
@@ -432,18 +430,6 @@ function clearAllData(){
     document.querySelectorAll(".value").forEach(el=>{
         el.innerText="0";
     });
-}
-
-/* ===== トースト ===== */
-
-function toast(msg){
-    const t=document.getElementById("toast");
-    t.innerText=msg;
-    t.classList.add("show");
-
-    setTimeout(()=>{
-        t.classList.remove("show");
-    },1500);
 }
 
 </script>
