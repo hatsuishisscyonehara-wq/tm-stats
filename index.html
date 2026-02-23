@@ -23,11 +23,29 @@ h2{
 
 .card{
     background:#fff;
-    padding:10px;
+    padding:12px;
     border-radius:12px;
-    margin-bottom:8px;
+    margin-bottom:10px;
     box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
+
+/* ★ 入力情報UI改善 */
+
+.input-group{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    margin-top:6px;
+}
+
+input, select{
+    padding:8px;
+    border-radius:8px;
+    border:1px solid #ccc;
+    font-size:14px;
+}
+
+/* player list */
 
 .player-list{
     display:grid;
@@ -63,8 +81,8 @@ h2{
 
 .section-title{
     font-weight:bold;
-    margin-top:6px;
-    margin-bottom:3px;
+    margin-top:8px;
+    margin-bottom:4px;
 }
 
 button{
@@ -102,24 +120,31 @@ button{
 
 <body>
 
-<h2>TMスタッツ入力 Pro</h2>
+<h2>TMスタッツ入力 Pro_v2</h2>
 
+<!-- ★ 入力情報カード（UI改善） -->
 <div class="card">
+
+<div class="section-title">試合基本情報入力</div>
+
+<div class="input-group">
 
 <label>日にち</label>
 <input type="date" id="matchDate">
 
 <label>対戦相手</label>
-<input type="text" id="opponent">
+<input type="text" id="opponent" placeholder="対戦相手を入力">
 
 <label>フォーメーション</label>
 <select id="formation">
-<option value="">選択してください</option>
+<option value="">フォーメーション選択</option>
 <option>4-2-1</option>
 <option>3-3-2</option>
 <option>3-3-1</option>
 <option>2-3-2</option>
 </select>
+
+</div>
 
 <div class="section-title">入力タイプ</div>
 <label><input type="radio" name="mode" value="attack"> 攻撃</label>
@@ -171,7 +196,7 @@ SL:"スライディング"
 let records={};
 let currentMode="";
 
-/* ===== UI生成 ===== */
+/* UI生成 */
 
 const playerList=document.getElementById("playerList");
 
@@ -188,20 +213,20 @@ players.forEach(p=>{
     playerList.appendChild(label);
 });
 
-/* ===== 保存 ===== */
+/* 保存 */
 
 function saveLocal(){
     localStorage.setItem("tm_records",JSON.stringify(records));
 }
 
-/* ===== 復元 ===== */
+/* 復元 */
 
 window.onload=function(){
     const r=localStorage.getItem("tm_records");
     if(r) records=JSON.parse(r);
 };
 
-/* ===== トースト ===== */
+/* トースト */
 
 function toast(msg){
     const t=document.getElementById("toast");
@@ -213,7 +238,7 @@ function toast(msg){
     },1500);
 }
 
-/* ===== 入力開始 ===== */
+/* 入力開始 */
 
 function startInput(){
 
@@ -266,7 +291,7 @@ function startInput(){
     });
 }
 
-/* ===== カウンター ===== */
+/* カウンター */
 
 function change(player,key,delta){
 
@@ -281,7 +306,7 @@ function change(player,key,delta){
     saveLocal();
 }
 
-/* ===== Excel出力（前仕様） ===== */
+/* Excel出力（前仕様維持） */
 
 function finishMatch(){
 
@@ -333,7 +358,7 @@ function finishMatch(){
     },500);
 }
 
-/* ===== 全クリア ===== */
+/* 全クリア */
 
 function clearAllData(){
 
