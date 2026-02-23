@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMスタッツ入力</title>
+
+<style>
+body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+    background:#f3f4f6;
+    margin:0;
+    padding:8px;
+}
+h2{
+    text-align:center;
+    margin:8px 0;
+}
+.card{
+    background:#fff;
+    padding:10px;
+    border-radius:12px;
+    margin-bottom:8px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
+}
+.player-list{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:4px;
+    max-height:200px;
+    overflow:auto;
+    font-size:14px;
+}
+.counter{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:4px;
+}
+.counter-name{flex:1;font-size:13px;}
+.counter button{
+    width:30px;height:30px;border:none;
+    border-radius:6px;background:#e2e8f0;font-size:15px;
+}
+.value{width:28px;text-align:center;}
+.section-title{font-weight:bold;margin-top:6px;margin-bottom:3px;}
+button{
+    width:100%;padding:8px;border:none;
+    border-radius:8px;margin-top:6px;font-size:14px;
+}
+.primary{background:#2563eb;color:#fff;}
+.success{background:#16a34a;color:#fff;}
+.terms{
+    margin:6px 0 8px 0;font-size:12px;
+    background:#eef2f7;padding:8px;
+    border-radius:8px;line-height:1.5;
+}
+</style>
+</head>
+
+<body>
+
+<h2>TMスタッツ入力</h2>
+
+<div class="card">
+
+<label>日にち</label>
+<input type="date" id="matchDate">
+
+<label>対戦相手</label>
+<input type="text" id="opponent">
+
+<label>フォーメーション</label>
+<select id="formation">
+<option value="">選択してください</option>
+<option>4-2-1</option>
+<option>3-3-1</option>
+<option>2-3-2</option>
+</select>
+
+<div class="section-title">入力タイプ選択</div>
+<label><input type="radio" name="mode" value="attack"> 攻撃</label>
+<label><input type="radio" name="mode" value="defense"> 守備</label>
+
+<div class="section-title">選手選択（複数可）</div>
+<div class="player-list" id="playerList"></div>
+
+<button type="button" class="primary" id="startBtn">入力開始</button>
+</div>
+
+<div id="termsArea"></div>
+<div id="inputArea"></div>
+
+<button class="success" onclick="exportCSV()">CSV出力</button>
+
+<script>
+
+const players=[
+"2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
+"8 りく","9 あつと","10 だいき","11 とうり","13 しゅうせい",
+"14 けいすけ","17 ゆうだい","18 しょう","19 しゅん","20 こう",
+"22 にへこう","23 たもん","24 はたこう","25 けいま","26 とうま",
+"27 そうしろう","28 しょうま","29 たいしん","30 ゆう",
+"35 あやと","36 はる","37 かい","38 あらた","39 はると"
+];
+
+const attackKeys=["CHA","SHO","HD_O","THP","LP"];
+const defenseKeys=["SZ","PO","HD_D","SL"];
+
+const statsLabels={
+CHA:"ドリブルチャレンジ",
+SHO:"シュート",
+HD_O:"ヘディング",
+THP:"スルーパス",
+LP:"ロングパス",
+SZ:"ボール奪取",
+PO:"抜かれた数",
+HD_D:"ヘディングクリア",
+SL:"スライディング"
+};
+
+const playerList=document.getElementById("playerList");
+
+/* ← innerHTML+= をやめて安定生成 */
+players.forEach(p=>{
+    const label=document.createElement("label");
+    const checkbox=document.createElement("input");
+    checkbox.type="checkbox";
+    checkbox.value=p;
+    label.appendChild(checkbox);
+    label.append(" "+p);
+    playerList.appendChild(label);
+});
+
+let records={};
+let currentMode="";
+
+document.getElementById("startBtn").addEventListener("click", createPlayerCards);
+
+function createPlayerCards(){
+
+    let errors=[];
+    if(!matchDate.value) errors.push("日にち");
+    if(!opponent.value) errors.push("対戦相手");
+    if(!formation.value) errors.push("フォーメーション");
+
+    const mode=document.querySelector("input[name='mode']:checked");
+    if(!mode) errors.push("攻撃／守備の選択");
+
+    const checked=document.querySelectorAll("#playerList input:checked");
+    if(checked.length===0) errors.push("選手選択");
+
+    if(errors.length>0){
+        alert("以下を入力してください：\n・" + errors.join("\n・"));
+        return;
+    }
+
+    currentMode = mode.value;
+    const keys = mode.value==="attack" ? attackKeys : defenseKeys;
+
+    inputArea.innerHTML="";
+    termsArea.innerHTML="";
+    records={};
+
+    if(mode.value==="attack"){
+        termsArea.innerHTML=`<div class="card terms">【用語説明】<br>
+        ドリブルチャレンジ：相手に対して仕掛けた数<br>
+        シュート：枠内外問わず<br>
+        ヘディング：シュート・パス問わず<br>
+        スルーパス：足元へのパス含む。チャレンジ含む<br>
+        ロングパス：チャレンジ含む</div>`;
+    }else{
+        termsArea.innerHTML=`<div class="card terms">【用語説明】<br>
+        ボール奪取：奪取し確実にマイボールになった数<br>
+        抜かれた数：対人で抜かれた数<br>
+        ヘディングクリア：クリア目的のヘディング<br>
+        スライディング：守備目的で実施</div>`;
+    }
+
+    checked.forEach(c=>{
+        const name=c.value;
+        records[name]={};
+        [...attackKeys,...defenseKeys].forEach(k=>records[name][k]=0);
+
+        const card=document.createElement("div");
+        card.className="card";
+
+        const title=document.createElement("div");
+        title.className="section-title";
+        title.innerText=name;
+        card.appendChild(title);
+
+        keys.forEach(k=>{
+            const row=document.createElement("div");
+            row.className="counter";
+
+            row.innerHTML=`
+                <div class="counter-name">${statsLabels[k]}</div>
+                <button type="button" onclick="change('${name}','${k}',-1)">-</button>
+                <div class="value" id="${name}_${k}">0</div>
+                <button type="button" onclick="change('${name}','${k}',1)">+</button>
+            `;
+            card.appendChild(row);
+        });
+
+        inputArea.appendChild(card);
+    });
+}
+
+function change(player,key,delta){
+    records[player][key]+=delta;
+    if(records[player][key]<0)records[player][key]=0;
+    document.getElementById(`${player}_${key}`).innerText=records[player][key];
+}
+
+function exportCSV(){
+    if(Object.keys(records).length===0){
+        alert("入力データがありません");
+        return;
+    }
+
+    const date=matchDate.value;
+    const opponentVal=opponent.value;
+    const formationVal=formation.value;
+    const modeJP = currentMode==="attack" ? "攻撃" : "守備";
+
+    let csv="対戦相手,日にち,フォーメーション,攻撃・守備,選手NO,選手名,CHA,SHO,HD(攻),THP,LP,SZ,PO,HD(守),SL\n";
+
+    Object.keys(records).forEach(player=>{
+        const r=records[player];
+        const parts=player.split(" ");
+        csv+=`${opponentVal},${date},${formationVal},${modeJP},${parts[0]},${parts[1]},${r.CHA},${r.SHO},${r.HD_O},${r.THP},${r.LP},${r.SZ},${r.PO},${r.HD_D},${r.SL}\n`;
+    });
+
+    const yyyymmdd=date.replaceAll("-","");
+    const bom=new Uint8Array([0xEF,0xBB,0xBF]);
+    const blob=new Blob([bom,csv],{type:"text/csv;charset=utf-8;"});
+
+    const link=document.createElement("a");
+    link.href=URL.createObjectURL(blob);
+    link.download=`${yyyymmdd}_TM${opponentVal}.csv`;
+    link.click();
+}
+
+</script>
+</body>
+</html>
