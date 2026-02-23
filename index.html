@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 出場時間カウンタ版</title>
+<title>TMスタッツ Pro 完全版（出場時間統合）</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
+
 body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
     background:#f3f4f6;
@@ -25,10 +26,16 @@ body{
 .player-list{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:4px;
+    gap:6px;
     max-height:220px;
     overflow:auto;
     font-size:14px;
+}
+
+.timer{
+    color:#2563eb;
+    font-weight:bold;
+    margin-left:8px;
 }
 
 button{
@@ -42,26 +49,50 @@ button{
 .primary{background:#2563eb;color:#fff;}
 .success{background:#16a34a;color:#fff;}
 
-.timer{
-    color:#2563eb;
-    font-weight:bold;
-    margin-left:8px;
-}
 </style>
 </head>
 
 <body>
 
-<h2>TMスタッツ Pro（出場時間カウント版）</h2>
+<h2>TMスタッツ Pro（出場時間統合版）</h2>
 
 <div class="card">
 
-<div>選手選択（出場時間カウント対象）</div>
+<div>試合基本情報</div>
+
+<label>日にち</label>
+<input type="date" id="matchDate">
+
+<label>対戦相手</label>
+<input type="text" id="opponent">
+
+<label>フォーメーション</label>
+<select id="formation">
+<option value="">フォーメーション選択</option>
+<option>4-2-1</option>
+<option>3-3-2</option>
+<option>3-3-1</option>
+<option>2-3-2</option>
+</select>
+
+</div>
+
+<div class="card">
+
+<div>選手選択（出場時間カウント）</div>
 
 <div class="player-list" id="playerList"></div>
 
 <button class="primary" onclick="startInput()">入力開始</button>
 <button class="success" onclick="finishMatch()">試合終了</button>
+
+</div>
+
+<div class="card">
+
+<button class="success" onclick="finishMatch()">Excel出力</button>
+<button class="primary" onclick="exportStatsImage()">画像出力</button>
+<button class="primary" onclick="clearAllData()">全クリア</button>
 
 </div>
 
@@ -80,10 +111,8 @@ const players=[
 "35 あやと","36 はる","37 かい","38 あらた","39 はると"
 ];
 
-let timerInterval=null;
-
-/* 選手状態管理 */
 let playerState={};
+let timerInterval=null;
 
 /* ===============================
 UI生成
@@ -99,7 +128,7 @@ players.forEach(p=>{
     check.type="checkbox";
     check.value=p;
 
-    check.onchange=()=>syncPlayerTimer();
+    check.onchange=syncPlayerTimer;
 
     label.appendChild(check);
     label.append(" "+p);
@@ -120,7 +149,7 @@ players.forEach(p=>{
 });
 
 /* ===============================
-入力開始（カウント開始）
+入力開始
 =============================== */
 
 function startInput(){
@@ -142,7 +171,7 @@ function startInput(){
 }
 
 /* ===============================
-チェック状態同期
+チェック同期
 =============================== */
 
 function syncPlayerTimer(){
@@ -151,17 +180,13 @@ function syncPlayerTimer(){
 
         const name=el.value;
 
-        if(el.checked){
-            playerState[name].active=true;
-        }else{
-            playerState[name].active=false;
-        }
+        playerState[name].active=el.checked;
 
     });
 }
 
 /* ===============================
-UI更新（分秒表示）
+UI更新
 =============================== */
 
 function updateTimerUI(name){
@@ -197,6 +222,23 @@ function finishMatch(){
     Object.keys(playerState).forEach(name=>{
         playerState[name].active=false;
     });
+}
+
+/* ===============================
+全クリア
+=============================== */
+
+function clearAllData(){
+
+    if(!confirm("全データをクリアしますか？")) return;
+
+    playerState={};
+
+    document.querySelectorAll("#playerList input")
+    .forEach(el=>el.checked=false);
+
+    document.querySelectorAll(".timer")
+    .forEach(el=>el.innerText="00:00");
 }
 
 </script>
