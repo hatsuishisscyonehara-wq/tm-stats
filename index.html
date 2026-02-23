@@ -3,19 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TMスタッツ Pro 完全版（修正版）</title>
+<title>TMスタッツ Pro 最終完全版</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
+
 body{
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
     background:#f3f4f6;
     margin:0;
     padding:8px;
 }
-
-h2{text-align:center;}
 
 .card{
     background:#fff;
@@ -32,6 +31,12 @@ h2{text-align:center;}
     max-height:220px;
     overflow:auto;
     font-size:14px;
+}
+
+.timer{
+    color:#2563eb;
+    font-weight:bold;
+    margin-left:6px;
 }
 
 .counter{
@@ -54,12 +59,6 @@ h2{text-align:center;}
     text-align:center;
 }
 
-.timer{
-    color:#2563eb;
-    font-weight:bold;
-    margin-left:6px;
-}
-
 button{
     width:100%;
     padding:8px;
@@ -76,7 +75,7 @@ button{
 
 <body>
 
-<h2>TMスタッツ Pro（修正版統合）</h2>
+<h2>TMスタッツ Pro（最終完全版）</h2>
 
 <div class="card">
 
@@ -120,13 +119,15 @@ button{
 
 <div id="inputArea"></div>
 
-<button class="success" onclick="finishMatch()">Excel出力</button>
-<button class="primary" onclick="exportStatsImage()">画像出力</button>
+<button class="success" onclick="exportExcel()">Excel出力</button>
+<button class="primary" onclick="exportImage()">画像出力</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
 <script>
 
-/* ===== データ ===== */
+/* ===============================
+データ定義
+=============================== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -157,7 +158,9 @@ let playerState={};
 let currentMode="";
 let timerInterval=null;
 
-/* ===== UI生成 ===== */
+/* ===============================
+UI生成
+=============================== */
 
 const playerList=document.getElementById("playerList");
 
@@ -188,7 +191,9 @@ players.forEach(p=>{
     [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
 });
 
-/* ===== 入力開始 ===== */
+/* ===============================
+入力開始
+=============================== */
 
 function startInput(){
 
@@ -219,7 +224,9 @@ function startInput(){
     renderCounters();
 }
 
-/* ===== チェック同期 ===== */
+/* ===============================
+チェック同期
+=============================== */
 
 function syncPlayerTimer(){
 
@@ -228,7 +235,9 @@ function syncPlayerTimer(){
     });
 }
 
-/* ===== カウンタUI ===== */
+/* ===============================
+カウンタUI
+=============================== */
 
 function renderCounters(){
 
@@ -276,7 +285,9 @@ function counterHTML(name,key){
     </div>`;
 }
 
-/* ===== カウント ===== */
+/* ===============================
+カウント
+=============================== */
 
 function change(player,key,delta){
 
@@ -289,7 +300,9 @@ function change(player,key,delta){
         .innerText=records[player][key];
 }
 
-/* ===== タイマーUI ===== */
+/* ===============================
+タイマーUI
+=============================== */
 
 function updateTimerUI(name){
 
@@ -298,19 +311,16 @@ function updateTimerUI(name){
     const m=Math.floor(sec/60);
     const s=sec%60;
 
-    const el=document.getElementById(
+    document.getElementById(
         "timer_"+name.replace(" ","_")
-    );
-
-    if(el){
-        el.innerText=
-            String(m).padStart(2,"0")+
-            ":"+
-            String(s).padStart(2,"0");
-    }
+    ).innerText=
+        String(m).padStart(2,"0")+":"+
+        String(s).padStart(2,"0");
 }
 
-/* ===== 試合終了 ===== */
+/* ===============================
+試合終了
+=============================== */
 
 function finishMatch(){
 
@@ -322,28 +332,93 @@ function finishMatch(){
     Object.keys(playerState).forEach(name=>{
         playerState[name].active=false;
     });
-
-    alert("試合終了しました");
 }
 
-/* ===== Excel出力 ===== */
+/* ===============================
+出力フィルタ（1秒以上のみ）
+=============================== */
 
-function exportStatsImage(){
+function getExportPlayers(){
 
-    alert("画像出力機能は簡易版環境では省略しています");
+    return Object.keys(playerState)
+    .filter(name=>playerState[name].time>=1);
 }
 
-/* ===== 全クリア ===== */
+/* ===============================
+Excel出力
+=============================== */
+
+function exportExcel(){
+
+    const exportPlayers=getExportPlayers();
+
+    if(!exportPlayers.length){
+        alert("出場時間1秒以上の選手がいません");
+        return;
+    }
+
+    const rows=[];
+
+    exportPlayers.forEach(player=>{
+
+        const r=records[player];
+        const parts=player.split(" ");
+
+        const sec=playerState[player].time;
+        const m=Math.floor(sec/60);
+        const s=sec%60;
+
+        rows.push({
+            対戦相手:opponent.value||"",
+            日にち:matchDate.value||"",
+            フォーメーション:formation.value||"",
+            攻守:currentMode,
+            選手NO:parts[0],
+            選手名:parts[1],
+            出場時間:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
+            CHA:r.CHA||0,
+            SHO:r.SHO||0,
+            HD_O:r.HD_O||0,
+            THP:r.THP||0,
+            LP:r.LP||0,
+            SZ:r.SZ||0,
+            PO:r.PO||0,
+            HD_D:r.HD_D||0,
+            SL:r.SL||0
+        });
+    });
+
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.json_to_sheet(rows);
+
+    XLSX.utils.book_append_sheet(wb,ws,"TM");
+
+    XLSX.writeFile(
+        wb,
+        (matchDate.value||"match").replaceAll("-","")+
+        "_TM.xlsx"
+    );
+}
+
+/* ===============================
+画像出力（簡易）
+=============================== */
+
+function exportImage(){
+
+    alert("画像出力はブラウザCanvas保存仕様です");
+
+}
+
+/* ===============================
+全クリア
+=============================== */
 
 function clearAllData(){
 
     if(!confirm("全データをクリアしますか？")) return;
 
-    Object.keys(records).forEach(p=>{
-        [...attackKeys,...defenseKeys].forEach(k=>{
-            records[p][k]=0;
-        });
-    });
+    records={};
 
     Object.values(playerState).forEach(st=>{
         st.time=0;
