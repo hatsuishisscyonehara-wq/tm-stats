@@ -2,65 +2,109 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TMスタッツ入力</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TMスタッツ入力（現場最強版）</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
+
 body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
     background:#f3f4f6;
     margin:0;
     padding:8px;
 }
+
+/* --- UI --- */
+
 h2{
     text-align:center;
-    margin:8px 0;
 }
+
 .card{
     background:#fff;
-    padding:10px;
-    border-radius:12px;
-    margin-bottom:8px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.08);
+    padding:12px;
+    border-radius:14px;
+    margin-bottom:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
+
+button{
+    width:100%;
+    padding:10px;
+    border:none;
+    border-radius:10px;
+    margin-top:8px;
+    font-size:15px;
+}
+
+/* --- 大タップ対応 --- */
+
+.counter{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin-top:6px;
+}
+
+.counter button{
+    width:42px;
+    height:42px;
+    font-size:20px;
+}
+
+.value{
+    width:36px;
+    text-align:center;
+    font-weight:bold;
+}
+
 .player-list{
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:4px;
-    max-height:200px;
+    gap:6px;
+    max-height:220px;
     overflow:auto;
-    font-size:14px;
+    font-size:15px;
 }
-.counter{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:4px;
+
+/* --- ボタン --- */
+
+.primary{background:#2563eb;color:white;}
+.success{background:#16a34a;color:white;}
+
+.section-title{
+    font-weight:bold;
+    margin-top:8px;
 }
-.counter-name{flex:1;font-size:13px;}
-.counter button{
-    width:30px;height:30px;border:none;
-    border-radius:6px;background:#e2e8f0;font-size:15px;
+
+/* --- トースト --- */
+
+#toast{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    background:black;
+    color:white;
+    padding:10px 16px;
+    border-radius:20px;
+    opacity:0;
+    transition:.3s;
+    z-index:999;
 }
-.value{width:28px;text-align:center;}
-.section-title{font-weight:bold;margin-top:6px;margin-bottom:3px;}
-button{
-    width:100%;padding:8px;border:none;
-    border-radius:8px;margin-top:6px;font-size:14px;
+
+#toast.show{
+    opacity:.85;
 }
-.primary{background:#2563eb;color:#fff;}
-.success{background:#16a34a;color:#fff;}
-.terms{
-    margin:6px 0 8px 0;font-size:12px;
-    background:#eef2f7;padding:8px;
-    border-radius:8px;line-height:1.5;
-}
+
 </style>
 </head>
 
 <body>
 
-<h2>TMスタッツ入力</h2>
+<h2>TMスタッツ入力（現場最強版）</h2>
 
 <div class="card">
 
@@ -72,28 +116,35 @@ button{
 
 <label>フォーメーション</label>
 <select id="formation">
-<option value="">選択してください</option>
+<option value="">選択</option>
 <option>4-2-1</option>
 <option>3-3-1</option>
 <option>2-3-2</option>
 </select>
 
-<div class="section-title">入力タイプ選択</div>
+<div class="section-title">入力タイプ</div>
 <label><input type="radio" name="mode" value="attack"> 攻撃</label>
 <label><input type="radio" name="mode" value="defense"> 守備</label>
 
-<div class="section-title">選手選択（複数可）</div>
+<div class="section-title">選手選択</div>
 <div class="player-list" id="playerList"></div>
 
-<button type="button" class="primary" id="startBtn">入力開始</button>
+<button class="primary" onclick="startInput()">入力開始</button>
+
 </div>
 
 <div id="termsArea"></div>
 <div id="inputArea"></div>
 
-<button class="success" onclick="exportCSV()">CSV出力</button>
+<button class="success" onclick="exportExcel()">Excel出力</button>
+
+<div id="toast"></div>
 
 <script>
+
+/* -----------------------------
+選手
+----------------------------- */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -107,37 +158,88 @@ const players=[
 const attackKeys=["CHA","SHO","HD_O","THP","LP"];
 const defenseKeys=["SZ","PO","HD_D","SL"];
 
-const statsLabels={
-CHA:"ドリブルチャレンジ",
+const labels={
+CHA:"ドリブル",
 SHO:"シュート",
 HD_O:"ヘディング",
 THP:"スルーパス",
 LP:"ロングパス",
-SZ:"ボール奪取",
-PO:"抜かれた数",
-HD_D:"ヘディングクリア",
+SZ:"奪取",
+PO:"抜かれ",
+HD_D:"HDクリア",
 SL:"スライディング"
 };
 
-const playerList=document.getElementById("playerList");
-
-/* player checkbox生成 */
-players.forEach(p=>{
-    const label=document.createElement("label");
-    const checkbox=document.createElement("input");
-    checkbox.type="checkbox";
-    checkbox.value=p;
-    label.appendChild(checkbox);
-    label.append(" "+p);
-    playerList.appendChild(label);
-});
+/* -----------------------------
+状態
+----------------------------- */
 
 let records={};
 let currentMode="";
 
-document.getElementById("startBtn").addEventListener("click", createPlayerCards);
+/* -----------------------------
+初期描画
+----------------------------- */
 
-function createPlayerCards(){
+const playerList=document.getElementById("playerList");
+
+players.forEach(p=>{
+    const label=document.createElement("label");
+    const check=document.createElement("input");
+
+    check.type="checkbox";
+    check.value=p;
+
+    label.appendChild(check);
+    label.append(" "+p);
+
+    playerList.appendChild(label);
+});
+
+/* -----------------------------
+トースト
+----------------------------- */
+
+function toast(msg){
+    const t=document.getElementById("toast");
+    t.innerText=msg;
+    t.classList.add("show");
+
+    setTimeout(()=>{
+        t.classList.remove("show");
+    },1500);
+}
+
+/* -----------------------------
+保存
+----------------------------- */
+
+function saveLocal(){
+    localStorage.setItem("tm_records",JSON.stringify(records));
+    localStorage.setItem("tm_matchDate",matchDate.value);
+    localStorage.setItem("tm_opponent",opponent.value);
+    localStorage.setItem("tm_formation",formation.value);
+}
+
+/* -----------------------------
+復元
+----------------------------- */
+
+window.onload=function(){
+
+    const r=localStorage.getItem("tm_records");
+    if(r) records=JSON.parse(r);
+
+    matchDate.value=localStorage.getItem("tm_matchDate")||"";
+    opponent.value=localStorage.getItem("tm_opponent")||"";
+    formation.value=localStorage.getItem("tm_formation")||"";
+};
+
+/* -----------------------------
+入力開始
+----------------------------- */
+
+function startInput(){
 
     let errors=[];
     if(!matchDate.value) errors.push("日にち");
@@ -145,114 +247,127 @@ function createPlayerCards(){
     if(!formation.value) errors.push("フォーメーション");
 
     const mode=document.querySelector("input[name='mode']:checked");
-    if(!mode) errors.push("攻撃／守備の選択");
+    if(!mode) errors.push("攻守選択");
 
-    const checked=document.querySelectorAll("#playerList input:checked");
+    const checked=[...document.querySelectorAll("#playerList input:checked")];
+
     if(checked.length===0) errors.push("選手選択");
 
-    if(errors.length>0){
-        alert("以下を入力してください：\n・" + errors.join("\n・"));
+    if(errors.length){
+        alert("入力してください\n・"+errors.join("\n・"));
         return;
     }
 
-    currentMode = mode.value;
-    const keys = mode.value==="attack" ? attackKeys : defenseKeys;
+    currentMode=mode.value;
 
     inputArea.innerHTML="";
     termsArea.innerHTML="";
-    records={};
 
     if(mode.value==="attack"){
-        termsArea.innerHTML=`<div class="card terms">【用語説明】<br>
-        ドリブルチャレンジ：相手に対して仕掛けた数<br>
-        シュート：枠内外問わず<br>
-        ヘディング：シュート・パス問わず<br>
-        スルーパス：足元へのパス含む。チャレンジ含む<br>
-        ロングパス：チャレンジ含む</div>`;
+        termsArea.innerHTML="<div class='card'>攻撃スタッツ入力</div>";
     }else{
-        termsArea.innerHTML=`<div class="card terms">【用語説明】<br>
-        ボール奪取：奪取し確実にマイボールになった数<br>
-        抜かれた数：対人で抜かれた数<br>
-        ヘディングクリア：クリア目的のヘディング<br>
-        スライディング：守備目的で実施</div>`;
+        termsArea.innerHTML="<div class='card'>守備スタッツ入力</div>";
     }
 
+    const keys = mode.value==="attack" ? attackKeys : defenseKeys;
+
     checked.forEach(c=>{
+
         const name=c.value;
-        records[name]={};
-        [...attackKeys,...defenseKeys].forEach(k=>records[name][k]=0);
+
+        if(!records[name]){
+            records[name]={};
+            [...attackKeys,...defenseKeys].forEach(k=>records[name][k]=0);
+        }
 
         const card=document.createElement("div");
         card.className="card";
 
-        const title=document.createElement("div");
-        title.className="section-title";
-        title.innerText=name;
-        card.appendChild(title);
+        card.innerHTML=`<div class="section-title">${name}</div>`;
 
         keys.forEach(k=>{
-            const row=document.createElement("div");
-            row.className="counter";
-
-            row.innerHTML=`
-                <div class="counter-name">${statsLabels[k]}</div>
-                <button type="button" onclick="change('${name}','${k}',-1)">-</button>
-                <div class="value" id="${name}_${k}">0</div>
-                <button type="button" onclick="change('${name}','${k}',1)">+</button>
-            `;
-            card.appendChild(row);
+            card.innerHTML+=`
+            <div class="counter">
+                <div style="flex:1">${labels[k]}</div>
+                <button onclick="change('${name}','${k}',-1)">-</button>
+                <div class="value" id="${name}_${k}">
+                ${records[name][k]||0}
+                </div>
+                <button onclick="change('${name}','${k}',1)">+</button>
+            </div>`;
         });
 
         inputArea.appendChild(card);
     });
 }
 
+/* -----------------------------
+カウンター
+----------------------------- */
+
 function change(player,key,delta){
+
     records[player][key]+=delta;
-    if(records[player][key]<0)records[player][key]=0;
-    document.getElementById(`${player}_${key}`).innerText=records[player][key];
+
+    if(records[player][key]<0)
+        records[player][key]=0;
+
+    document.getElementById(`${player}_${key}`)
+        .innerText=records[player][key];
+
+    saveLocal();
 }
 
-function exportCSV(){
-    if(Object.keys(records).length===0){
-        alert("入力データがありません");
+/* -----------------------------
+Excel出力（最強互換）
+----------------------------- */
+
+function exportExcel(){
+
+    if(!Object.keys(records).length){
+        alert("データなし");
         return;
     }
 
-    const date=matchDate.value;
-    const opponentVal=opponent.value;
-    const formationVal=formation.value;
-    const modeJP = currentMode==="attack" ? "攻撃" : "守備";
-
-    let csv="対戦相手,日にち,フォーメーション,攻撃・守備,選手NO,選手名,CHA,SHO,HD(攻),THP,LP,SZ,PO,HD(守),SL\n";
+    const rows=[];
 
     Object.keys(records).forEach(player=>{
         const r=records[player];
         const parts=player.split(" ");
-        csv+=`${opponentVal},${date},${formationVal},${modeJP},${parts[0]},${parts[1]},${r.CHA},${r.SHO},${r.HD_O},${r.THP},${r.LP},${r.SZ},${r.PO},${r.HD_D},${r.SL}\n`;
+
+        rows.push({
+            対戦相手:opponent.value,
+            日にち:matchDate.value,
+            フォーメーション:formation.value,
+            攻守:currentMode==="attack"?"攻撃":"守備",
+            NO:parts[0],
+            名前:parts[1],
+            CHA:r.CHA||0,
+            SHO:r.SHO||0,
+            HD_O:r.HD_O||0,
+            THP:r.THP||0,
+            LP:r.LP||0,
+            SZ:r.SZ||0,
+            PO:r.PO||0,
+            HD_D:r.HD_D||0,
+            SL:r.SL||0
+        });
     });
 
-    const yyyymmdd=date.replaceAll("-","");
-    const bom=new Uint8Array([0xEF,0xBB,0xBF]);
-    const blob=new Blob([bom,csv],{type:"text/csv;charset=utf-8;"});
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.json_to_sheet(rows);
 
-    const url=URL.createObjectURL(blob);
+    XLSX.utils.book_append_sheet(wb,ws,"TM");
 
-    const link=document.createElement("a");
-    link.href=url;
-    link.download=`${yyyymmdd}_TM${opponentVal}.csv`;
-    link.target="_blank";
-    link.style.display="none";
+    XLSX.writeFile(
+        wb,
+        `${matchDate.value.replaceAll("-","")}_TM_${opponent.value}.xlsx`
+    );
 
-    document.body.appendChild(link);
-    link.click();
-
-    setTimeout(()=>{
-        URL.revokeObjectURL(url);
-        document.body.removeChild(link);
-    },1000);
+    toast("Excel出力しました");
 }
 
 </script>
+
 </body>
 </html>
