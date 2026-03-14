@@ -10,107 +10,105 @@
 <style>
 
 body{
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
-    background:#f3f4f6;
-    margin:0;
-    padding:8px;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+background:#f3f4f6;
+margin:0;
+padding:8px;
 }
 
 .card{
-    background:#fff;
-    padding:14px;
-    border-radius:12px;
-    margin-bottom:12px;
-    box-shadow:0 3px 8px rgba(0,0,0,0.08);
+background:#fff;
+padding:14px;
+border-radius:12px;
+margin-bottom:12px;
+box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
 .form-row{
-    display:flex;
-    flex-direction:column;
-    margin-bottom:10px;
+display:flex;
+flex-direction:column;
+margin-bottom:10px;
 }
 
 .form-row label{
-    font-size:13px;
-    font-weight:bold;
-    margin-bottom:4px;
-    color:#374151;
+font-size:13px;
+font-weight:bold;
+margin-bottom:4px;
+color:#374151;
 }
 
 input,select{
-    padding:8px;
-    border-radius:8px;
-    border:1px solid #cbd5e1;
-    font-size:15px;
+padding:8px;
+border-radius:8px;
+border:1px solid #cbd5e1;
+font-size:15px;
 }
 
 .player-list{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:4px;
-    max-height:200px;
-    overflow:auto;
-    font-size:14px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:4px;
+max-height:200px;
+overflow:auto;
+font-size:14px;
 }
 
 .counter{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-top:4px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-top:4px;
 }
 
 .counter button{
-    width:32px;
-    height:32px;
-    border:none;
-    border-radius:6px;
-    background:#e2e8f0;
+width:32px;
+height:32px;
+border:none;
+border-radius:6px;
+background:#e2e8f0;
 }
 
 .value{
-    width:30px;
-    text-align:center;
+width:30px;
+text-align:center;
 }
 
 .timer{
-    color:#2563eb;
-    font-weight:bold;
-    margin-left:6px;
+color:#2563eb;
+font-weight:bold;
+margin-left:6px;
 }
 
 button{
-    width:100%;
-    padding:8px;
-    border:none;
-    border-radius:8px;
-    margin-top:6px;
-    font-size:15px;
+width:100%;
+padding:8px;
+border:none;
+border-radius:8px;
+margin-top:6px;
+font-size:15px;
 }
 
 .primary{background:#2563eb;color:#fff;}
 .success{background:#16a34a;color:#fff;}
 
-/* ===== README Modal ===== */
-
 #readmeModal{
-    display:none;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.6);
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.6);
 }
 
 #readmeContent{
-    background:#fff;
-    margin:40px auto;
-    padding:20px;
-    width:90%;
-    max-height:80%;
-    overflow:auto;
-    border-radius:12px;
+background:#fff;
+margin:40px auto;
+padding:20px;
+width:90%;
+max-height:80%;
+overflow:auto;
+border-radius:12px;
 }
 
 </style>
@@ -118,7 +116,6 @@ button{
 
 <body>
 
-<!-- READMEリンク（最上部） -->
 <button class="primary" onclick="showReadme()" style="margin-bottom:8px;">
 📘 README（使い方説明）
 </button>
@@ -177,66 +174,34 @@ button{
 <button class="success" onclick="exportExcel()">Excel出力</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
 
-<!-- README Modal -->
 <div id="readmeModal" onclick="closeReadme()">
 <div id="readmeContent" onclick="event.stopPropagation()"></div>
 </div>
 
 <script>
 
-/* ===== README TEXT ===== */
+const README_TEXT=`スタッツ入力アプリ
+少年サッカー試合スタッツ記録用ツール
 
-const README_TEXT = `
-スタッツ入力（少年サッカー試合スタッツ入力アプリ）
+①試合情報入力
+②入力タイプ選択
+③出場選手チェック
+④試合開始
+⑤スタッツ入力
+⑥試合終了
+⑦Excel出力
 
-■ 基本操作手順
-
-① 試合情報を入力
-・日にち
-・対戦相手（例：初石SSC1試合目）
-・フォーメーション（選択式）
-
-② 入力タイプ選択
-・攻撃
-・守備
-・攻撃守備両方
-
-③ 出場選手選択
-チェックを付けた選手が対象です。
-試合開始後も選手追加・削除が可能です。
-
-④ 試合開始
-・出場時間カウント開始
-・スタッツ入力UI生成
-
-⑤ スタッツ入力
-＋ボタン：カウント増加
-－ボタン：カウント減少（0以下にはなりません）
-
-⑥ 試合終了
-・カウント停止
-
-⑦ Excel出力
-・出場時間1秒以上の選手のみ出力
-
-※ページ更新するとデータは消えます。
-
---------------------------------
-本アプリはブラウザ内動作型です。
+出場時間1秒以上の選手のみ出力
 `;
 
 function showReadme(){
-    document.getElementById("readmeContent").innerText=README_TEXT;
-    document.getElementById("readmeModal").style.display="block";
+document.getElementById("readmeContent").innerText=README_TEXT;
+document.getElementById("readmeModal").style.display="block";
 }
 
 function closeReadme(){
-    document.getElementById("readmeModal").style.display="none";
+document.getElementById("readmeModal").style.display="none";
 }
-
-/* ===============================
-以下、元アプリロジック（変更なし）
-=============================== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -268,260 +233,288 @@ let currentMode="";
 let timerInterval=null;
 let matchStarted=false;
 
-/* UI生成 */
-
 const playerList=document.getElementById("playerList");
 
 players.forEach(p=>{
 
-    const label=document.createElement("label");
+const label=document.createElement("label");
 
-    const check=document.createElement("input");
-    check.type="checkbox";
-    check.value=p;
-    check.onchange=syncPlayerTimer;
+const check=document.createElement("input");
+check.type="checkbox";
+check.value=p;
+check.onchange=syncPlayerTimer;
 
-    label.appendChild(check);
-    label.append(" "+p);
+label.appendChild(check);
+label.append(" "+p);
 
-    const span=document.createElement("span");
-    span.id="timer_"+p.replace(" ","_");
-    span.className="timer";
-    span.innerText="00:00";
+const span=document.createElement("span");
+span.id="timer_"+p.replace(" ","_");
+span.className="timer";
+span.innerText="00:00";
 
-    label.appendChild(span);
+label.appendChild(span);
 
-    playerList.appendChild(label);
+playerList.appendChild(label);
 
-    playerState[p]={active:false,time:0};
+playerState[p]={active:false,time:0};
 
-    records[p]={};
-    [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
+records[p]={};
+[...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
+
 });
-
-/* 試合開始 */
 
 function startMatch(){
 
-    const mode=document.querySelector("input[name='mode']:checked");
+const mode=document.querySelector("input[name='mode']:checked");
 
-    if(!mode){
-        alert("入力タイプ選択");
-        return;
-    }
-
-    currentMode=mode.value;
-    matchStarted=true;
-
-    syncPlayerTimer();
-
-    if(!timerInterval){
-        timerInterval=setInterval(()=>{
-
-            Object.keys(playerState).forEach(name=>{
-                if(playerState[name].active){
-                    playerState[name].time++;
-                    updateTimerUI(name);
-                }
-            });
-
-        },1000);
-    }
-
-    renderCounters();
+if(!mode){
+alert("入力タイプ選択");
+return;
 }
 
-/* チェック同期（動的UI更新） */
+currentMode=mode.value;
+matchStarted=true;
+
+syncPlayerTimer();
+
+if(!timerInterval){
+
+timerInterval=setInterval(()=>{
+
+Object.keys(playerState).forEach(name=>{
+
+if(playerState[name].active){
+playerState[name].time++;
+updateTimerUI(name);
+}
+
+});
+
+},1000);
+
+}
+
+renderCounters();
+
+}
 
 function syncPlayerTimer(){
 
-    document.querySelectorAll("#playerList input").forEach(el=>{
-        playerState[el.value].active=el.checked;
-    });
+document.querySelectorAll("#playerList input").forEach(el=>{
+playerState[el.value].active=el.checked;
+});
 
-    if(matchStarted){
-        renderCounters();
-    }
+if(matchStarted){
+renderCounters();
 }
 
-/* 全クリア */
+}
 
 function clearAllData(){
 
-    if(!confirm("全データをクリアしますか？")) return;
+if(!confirm("全データをクリアしますか？")) return;
 
-    Object.keys(records).forEach(p=>{
-        [...attackKeys,...defenseKeys].forEach(k=>{
-            records[p][k]=0;
-        });
-    });
+Object.keys(records).forEach(p=>{
+[...attackKeys,...defenseKeys].forEach(k=>{
+records[p][k]=0;
+});
+});
 
-    Object.values(playerState).forEach(st=>{
-        st.time=0;
-        st.active=false;
-    });
+Object.values(playerState).forEach(st=>{
+st.time=0;
+st.active=false;
+});
 
-    document.querySelectorAll(".value").forEach(el=>{
-        el.innerText="0";
-    });
+document.querySelectorAll(".value").forEach(el=>{
+el.innerText="0";
+});
 
-    document.querySelectorAll(".timer").forEach(el=>{
-        el.innerText="00:00";
-    });
+document.querySelectorAll(".timer").forEach(el=>{
+el.innerText="00:00";
+});
 
-    document.querySelectorAll("#playerList input")
-    .forEach(el=>el.checked=false);
+document.querySelectorAll("#playerList input")
+.forEach(el=>el.checked=false);
 
-    inputArea.innerHTML="";
-    matchStarted=false;
+inputArea.innerHTML="";
+matchStarted=false;
+
 }
-
-/* カウンタUI */
 
 function renderCounters(){
 
-    inputArea.innerHTML="";
+inputArea.innerHTML="";
 
-    const checked=[...document.querySelectorAll("#playerList input:checked")];
+const checked=[...document.querySelectorAll("#playerList input:checked")];
 
-    const showAttack=currentMode==="attack"||currentMode==="both";
-    const showDefense=currentMode==="defense"||currentMode==="both";
+const showAttack=currentMode==="attack"||currentMode==="both";
+const showDefense=currentMode==="defense"||currentMode==="both";
 
-    checked.forEach(c=>{
+checked.forEach(c=>{
 
-        const name=c.value;
+const name=c.value;
 
-        const card=document.createElement("div");
-        card.className="card";
+const card=document.createElement("div");
+card.className="card";
 
-        card.innerHTML=`<b>${name}</b>`;
+card.innerHTML=`<b>${name}</b>`;
 
-        if(showAttack){
-            attackKeys.forEach(k=>{
-                card.innerHTML+=counterHTML(name,k);
-            });
-        }
+if(showAttack){
+attackKeys.forEach(k=>{
+card.innerHTML+=counterHTML(name,k);
+});
+}
 
-        if(showDefense){
-            defenseKeys.forEach(k=>{
-                card.innerHTML+=counterHTML(name,k);
-            });
-        }
+if(showDefense){
+defenseKeys.forEach(k=>{
+card.innerHTML+=counterHTML(name,k);
+});
+}
 
-        inputArea.appendChild(card);
-    });
+inputArea.appendChild(card);
+
+});
+
 }
 
 function counterHTML(name,key){
-    return `
-    <div class="counter">
-        <div style="flex:1">${labels[key]}</div>
-        <button onclick="change('${name}','${key}',-1)">-</button>
-        <div class="value" id="${name}_${key}">
-        ${records[name][key]}
-        </div>
-        <button onclick="change('${name}','${key}',1)">+</button>
-    </div>`;
+return `
+<div class="counter">
+<div style="flex:1">${labels[key]}</div>
+<button onclick="change('${name}','${key}',-1)">-</button>
+<div class="value" id="${name}_${key}">
+${records[name][key]}
+</div>
+<button onclick="change('${name}','${key}',1)">+</button>
+</div>`;
 }
 
 function change(player,key,delta){
 
-    records[player][key]+=delta;
+records[player][key]+=delta;
 
-    if(records[player][key]<0)
-        records[player][key]=0;
+if(records[player][key]<0)
+records[player][key]=0;
 
-    document.getElementById(`${player}_${key}`)
-        .innerText=records[player][key];
+document.getElementById(`${player}_${key}`)
+.innerText=records[player][key];
+
 }
 
 function updateTimerUI(name){
 
-    const sec=playerState[name].time;
+const sec=playerState[name].time;
 
-    const m=Math.floor(sec/60);
-    const s=sec%60;
+const m=Math.floor(sec/60);
+const s=sec%60;
 
-    document.getElementById(
-        "timer_"+name.replace(" ","_")
-    ).innerText=
-        String(m).padStart(2,"0")+":"+
-        String(s).padStart(2,"0");
+document.getElementById(
+"timer_"+name.replace(" ","_")
+).innerText=
+String(m).padStart(2,"0")+":"+
+String(s).padStart(2,"0");
+
 }
 
 function finishMatch(){
 
-    alert("出場時間カウントを終了します。");
+alert("出場時間カウントを終了します。");
 
-    if(timerInterval){
-        clearInterval(timerInterval);
-        timerInterval=null;
-    }
+if(timerInterval){
+clearInterval(timerInterval);
+timerInterval=null;
+}
 
-    matchStarted=false;
+matchStarted=false;
 
-    Object.keys(playerState).forEach(name=>{
-        playerState[name].active=false;
-    });
+Object.keys(playerState).forEach(name=>{
+playerState[name].active=false;
+});
+
 }
 
 function exportExcel(){
 
-    const exportPlayers=Object.keys(playerState)
-        .filter(name=>playerState[name].time>=1);
+const exportPlayers=Object.keys(playerState)
+.filter(name=>playerState[name].time>=1);
 
-    if(!exportPlayers.length){
-        alert("出場時間1秒以上の選手がいません");
-        return;
-    }
+if(!exportPlayers.length){
+alert("出場時間1秒以上の選手がいません");
+return;
+}
 
-    const rows=[];
+const rows=[];
 
-    exportPlayers.forEach(player=>{
+exportPlayers.forEach(player=>{
 
-        const r=records[player];
-        const parts=player.split(" ");
+const r=records[player];
+const parts=player.split(" ");
 
-        const sec=playerState[player].time;
-        const m=Math.floor(sec/60);
-        const s=sec%60;
+const sec=playerState[player].time;
+const m=Math.floor(sec/60);
+const s=sec%60;
 
-        rows.push({
-            対戦相手:opponent.value||"",
-            日にち:matchDate.value||"",
-            フォーメーション:formation.value||"",
-            攻守:currentMode,
-            選手NO:parts[0],
-            選手名:parts[1],
-            出場時間:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
-            CHA:r.CHA||0,
-            SHO:r.SHO||0,
-            HD_O:r.HD_O||0,
-            THP:r.THP||0,
-            LP:r.LP||0,
-            SZ:r.SZ||0,
-            PO:r.PO||0,
-            HD_D:r.HD_D||0,
-            SL:r.SL||0
-        });
-    });
+rows.push([
+opponent.value||"",
+matchDate.value||"",
+formation.value||"",
+currentMode,
+parts[0],
+parts[1],
+`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
+r.CHA||0,
+r.SHO||0,
+r.HD_O||0,
+r.THP||0,
+r.LP||0,
+r.SZ||0,
+r.PO||0,
+r.HD_D||0,
+r.SL||0
+]);
 
-    const wb=XLSX.utils.book_new();
-    const ws=XLSX.utils.json_to_sheet(rows);
+});
 
-    XLSX.utils.book_append_sheet(wb,ws,"TM");
+const header=[
+"対戦相手","日にち","フォーメーション","攻守",
+"選手NO","選手名","出場時間",
+"CHA","SHO","HD_O","THP","LP","SZ","PO","HD_D","SL"
+];
 
-    const yyyymmdd=(matchDate.value||"").replaceAll("-","");
-    const opponentName=(opponent.value||"match").replace(/\s+/g,"");
+rows.unshift(header);
 
-    XLSX.writeFile(
-        wb,
-        `${yyyymmdd}_${opponentName}.xlsx`
-    );
+const ws=XLSX.utils.aoa_to_sheet(rows);
+const wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"TM");
+
+const wbout=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+
+const blob=new Blob([wbout],{
+type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+});
+
+const yyyymmdd=(matchDate.value||"").replaceAll("-","");
+const opponentName=(opponent.value||"match").replace(/\s+/g,"");
+
+const fileName=`${yyyymmdd}_${opponentName}.xlsx`;
+
+const url=URL.createObjectURL(blob);
+
+const a=document.createElement("a");
+a.href=url;
+a.download=fileName;
+
+document.body.appendChild(a);
+a.click();
+
+setTimeout(()=>{
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+},100);
+
 }
 
 </script>
 
 </body>
 </html>
-
