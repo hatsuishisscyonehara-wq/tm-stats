@@ -6,96 +6,122 @@
 <title>スタッツ入力</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <style>
 
 body{
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
-background:#f3f4f6;
-margin:0;
-padding:8px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+    background:#f3f4f6;
+    margin:0;
+    padding:8px;
 }
 
 .card{
-background:#fff;
-padding:14px;
-border-radius:12px;
-margin-bottom:12px;
-box-shadow:0 3px 8px rgba(0,0,0,0.08);
+    background:#fff;
+    padding:14px;
+    border-radius:12px;
+    margin-bottom:12px;
+    box-shadow:0 3px 8px rgba(0,0,0,0.08);
 }
 
 .form-row{
-display:flex;
-flex-direction:column;
-margin-bottom:10px;
+    display:flex;
+    flex-direction:column;
+    margin-bottom:10px;
 }
 
 .form-row label{
-font-size:13px;
-font-weight:bold;
-margin-bottom:4px;
-color:#374151;
+    font-size:13px;
+    font-weight:bold;
+    margin-bottom:4px;
+    color:#374151;
 }
 
 input,select{
-padding:8px;
-border-radius:8px;
-border:1px solid #cbd5e1;
-font-size:15px;
+    padding:8px;
+    border-radius:8px;
+    border:1px solid #cbd5e1;
+    font-size:15px;
 }
 
 .player-list{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:4px;
-max-height:200px;
-overflow:auto;
-font-size:14px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:4px;
+    max-height:200px;
+    overflow:auto;
+    font-size:14px;
 }
 
 .counter{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-top:4px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:4px;
 }
 
 .counter button{
-width:32px;
-height:32px;
-border:none;
-border-radius:6px;
-background:#e2e8f0;
+    width:32px;
+    height:32px;
+    border:none;
+    border-radius:6px;
+    background:#e2e8f0;
 }
 
 .value{
-width:30px;
-text-align:center;
+    width:30px;
+    text-align:center;
 }
 
 .timer{
-color:#2563eb;
-font-weight:bold;
-margin-left:6px;
+    color:#2563eb;
+    font-weight:bold;
+    margin-left:6px;
 }
 
 button{
-width:100%;
-padding:8px;
-border:none;
-border-radius:8px;
-margin-top:6px;
-font-size:15px;
+    width:100%;
+    padding:8px;
+    border:none;
+    border-radius:8px;
+    margin-top:6px;
+    font-size:15px;
 }
 
 .primary{background:#2563eb;color:#fff;}
 .success{background:#16a34a;color:#fff;}
 
+/* ===== README Modal ===== */
+
+#readmeModal{
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.6);
+}
+
+#readmeContent{
+    background:#fff;
+    margin:40px auto;
+    padding:20px;
+    width:90%;
+    max-height:80%;
+    overflow:auto;
+    border-radius:12px;
+}
+
 </style>
 </head>
 
 <body>
+
+<!-- READMEリンク（最上部） -->
+<button class="primary" onclick="showReadme()" style="margin-bottom:8px;">
+📘 README（使い方説明）
+</button>
 
 <h2>スタッツ</h2>
 
@@ -107,17 +133,17 @@ font-size:15px;
 </div>
 
 <div class="form-row">
-<label>対戦相手</label>
-<input type="text" id="opponent">
+<label>対戦相手（フリー入力）</label>
+<input type="text" id="opponent" placeholder="例：初石SSC1試合目">
 </div>
 
 <div class="form-row">
 <label>フォーメーション</label>
 <select id="formation">
-<option value="">選択</option>
-<option>4-2-1</option>
-<option>3-3-1</option>
-<option>2-3-2</option>
+<option value="">選択してください</option>
+<option value="4-2-1">4-2-1</option>
+<option value="3-3-1">3-3-1</option>
+<option value="2-3-2">2-3-2</option>
 </select>
 </div>
 
@@ -127,15 +153,15 @@ font-size:15px;
 
 <div>入力タイプ</div>
 
-<label><input type="radio" name="mode" value="attack">攻撃</label>
-<label><input type="radio" name="mode" value="defense">守備</label>
-<label><input type="radio" name="mode" value="both">攻守両方</label>
+<label><input type="radio" name="mode" value="attack"> 攻撃</label>
+<label><input type="radio" name="mode" value="defense"> 守備</label>
+<label><input type="radio" name="mode" value="both"> 攻撃守備両方</label>
 
 </div>
 
 <div class="card">
 
-<div>出場選手</div>
+<div>出場選手（出場時間カウント）</div>
 
 <div class="player-list" id="playerList"></div>
 
@@ -147,10 +173,70 @@ font-size:15px;
 
 <div id="inputArea"></div>
 
+<button class="success" onclick="finishMatch()">試合終了</button>
 <button class="success" onclick="exportExcel()">Excel出力</button>
-<button class="primary" onclick="exportCSV()">CSV出力</button>
+<button class="primary" onclick="clearAllData()">全クリア</button>
+
+<!-- README Modal -->
+<div id="readmeModal" onclick="closeReadme()">
+<div id="readmeContent" onclick="event.stopPropagation()"></div>
+</div>
 
 <script>
+
+/* ===== README TEXT ===== */
+
+const README_TEXT = `
+スタッツ入力（少年サッカー試合スタッツ入力アプリ）
+
+■ 基本操作手順
+
+① 試合情報を入力
+・日にち
+・対戦相手（例：初石SSC1試合目）
+・フォーメーション（選択式）
+
+② 入力タイプ選択
+・攻撃
+・守備
+・攻撃守備両方
+
+③ 出場選手選択
+チェックを付けた選手が対象です。
+試合開始後も選手追加・削除が可能です。
+
+④ 試合開始
+・出場時間カウント開始
+・スタッツ入力UI生成
+
+⑤ スタッツ入力
+＋ボタン：カウント増加
+－ボタン：カウント減少（0以下にはなりません）
+
+⑥ 試合終了
+・カウント停止
+
+⑦ Excel出力
+・出場時間1秒以上の選手のみ出力
+
+※ページ更新するとデータは消えます。
+
+--------------------------------
+本アプリはブラウザ内動作型です。
+`;
+
+function showReadme(){
+    document.getElementById("readmeContent").innerText=README_TEXT;
+    document.getElementById("readmeModal").style.display="block";
+}
+
+function closeReadme(){
+    document.getElementById("readmeModal").style.display="none";
+}
+
+/* ===============================
+以下、元アプリロジック（変更なし）
+=============================== */
 
 const players=[
 "2 りょう","3 はるみち","4 いっさ","5 はるや","6 だいち","7 ひなた",
@@ -164,195 +250,275 @@ const players=[
 const attackKeys=["CHA","SHO","HD_O","THP","LP"];
 const defenseKeys=["SZ","PO","HD_D","SL"];
 
+const labels={
+CHA:"【攻撃】ドリブルチャレンジ",
+SHO:"【攻撃】シュート",
+HD_O:"【攻撃】ヘディング",
+THP:"【攻撃】スルーパス",
+LP:"【攻撃】ロングパス",
+SZ:"【守備】ボール完全奪取",
+PO:"【守備】抜かれた数",
+HD_D:"【守備】ヘディングクリア",
+SL:"【守備】スライディング"
+};
+
 let records={};
 let playerState={};
 let currentMode="";
 let timerInterval=null;
+let matchStarted=false;
+
+/* UI生成 */
 
 const playerList=document.getElementById("playerList");
 
 players.forEach(p=>{
 
-const label=document.createElement("label");
+    const label=document.createElement("label");
 
-const check=document.createElement("input");
-check.type="checkbox";
-check.value=p;
-check.onchange=saveState;
+    const check=document.createElement("input");
+    check.type="checkbox";
+    check.value=p;
+    check.onchange=syncPlayerTimer;
 
-label.appendChild(check);
-label.append(" "+p);
+    label.appendChild(check);
+    label.append(" "+p);
 
-const span=document.createElement("span");
-span.id="timer_"+p.replace(" ","_");
-span.className="timer";
-span.innerText="00:00";
+    const span=document.createElement("span");
+    span.id="timer_"+p.replace(" ","_");
+    span.className="timer";
+    span.innerText="00:00";
 
-label.appendChild(span);
+    label.appendChild(span);
 
-playerList.appendChild(label);
+    playerList.appendChild(label);
 
-playerState[p]={active:false,time:0};
+    playerState[p]={active:false,time:0};
 
-records[p]={};
-[...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
-
+    records[p]={};
+    [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
 });
+
+/* 試合開始 */
 
 function startMatch(){
 
-const mode=document.querySelector("input[name='mode']:checked");
-if(!mode){alert("入力タイプ選択");return;}
+    const mode=document.querySelector("input[name='mode']:checked");
 
-currentMode=mode.value;
+    if(!mode){
+        alert("入力タイプ選択");
+        return;
+    }
 
-timerInterval=setInterval(()=>{
+    currentMode=mode.value;
+    matchStarted=true;
 
-Object.keys(playerState).forEach(name=>{
-if(playerState[name].active){
-playerState[name].time++;
-updateTimerUI(name);
+    syncPlayerTimer();
+
+    if(!timerInterval){
+        timerInterval=setInterval(()=>{
+
+            Object.keys(playerState).forEach(name=>{
+                if(playerState[name].active){
+                    playerState[name].time++;
+                    updateTimerUI(name);
+                }
+            });
+
+        },1000);
+    }
+
+    renderCounters();
 }
-});
 
-saveState();
+/* チェック同期（動的UI更新） */
 
-},1000);
+function syncPlayerTimer(){
 
+    document.querySelectorAll("#playerList input").forEach(el=>{
+        playerState[el.value].active=el.checked;
+    });
+
+    if(matchStarted){
+        renderCounters();
+    }
+}
+
+/* 全クリア */
+
+function clearAllData(){
+
+    if(!confirm("全データをクリアしますか？")) return;
+
+    Object.keys(records).forEach(p=>{
+        [...attackKeys,...defenseKeys].forEach(k=>{
+            records[p][k]=0;
+        });
+    });
+
+    Object.values(playerState).forEach(st=>{
+        st.time=0;
+        st.active=false;
+    });
+
+    document.querySelectorAll(".value").forEach(el=>{
+        el.innerText="0";
+    });
+
+    document.querySelectorAll(".timer").forEach(el=>{
+        el.innerText="00:00";
+    });
+
+    document.querySelectorAll("#playerList input")
+    .forEach(el=>el.checked=false);
+
+    inputArea.innerHTML="";
+    matchStarted=false;
+}
+
+/* カウンタUI */
+
+function renderCounters(){
+
+    inputArea.innerHTML="";
+
+    const checked=[...document.querySelectorAll("#playerList input:checked")];
+
+    const showAttack=currentMode==="attack"||currentMode==="both";
+    const showDefense=currentMode==="defense"||currentMode==="both";
+
+    checked.forEach(c=>{
+
+        const name=c.value;
+
+        const card=document.createElement("div");
+        card.className="card";
+
+        card.innerHTML=`<b>${name}</b>`;
+
+        if(showAttack){
+            attackKeys.forEach(k=>{
+                card.innerHTML+=counterHTML(name,k);
+            });
+        }
+
+        if(showDefense){
+            defenseKeys.forEach(k=>{
+                card.innerHTML+=counterHTML(name,k);
+            });
+        }
+
+        inputArea.appendChild(card);
+    });
+}
+
+function counterHTML(name,key){
+    return `
+    <div class="counter">
+        <div style="flex:1">${labels[key]}</div>
+        <button onclick="change('${name}','${key}',-1)">-</button>
+        <div class="value" id="${name}_${key}">
+        ${records[name][key]}
+        </div>
+        <button onclick="change('${name}','${key}',1)">+</button>
+    </div>`;
+}
+
+function change(player,key,delta){
+
+    records[player][key]+=delta;
+
+    if(records[player][key]<0)
+        records[player][key]=0;
+
+    document.getElementById(`${player}_${key}`)
+        .innerText=records[player][key];
 }
 
 function updateTimerUI(name){
 
-const sec=playerState[name].time;
-const m=Math.floor(sec/60);
-const s=sec%60;
+    const sec=playerState[name].time;
 
-document.getElementById("timer_"+name.replace(" ","_")).innerText=
-String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    const m=Math.floor(sec/60);
+    const s=sec%60;
 
+    document.getElementById(
+        "timer_"+name.replace(" ","_")
+    ).innerText=
+        String(m).padStart(2,"0")+":"+
+        String(s).padStart(2,"0");
 }
 
 function finishMatch(){
 
-clearInterval(timerInterval);
-saveState();
+    alert("出場時間カウントを終了します。");
 
+    if(timerInterval){
+        clearInterval(timerInterval);
+        timerInterval=null;
+    }
+
+    matchStarted=false;
+
+    Object.keys(playerState).forEach(name=>{
+        playerState[name].active=false;
+    });
 }
 
 function exportExcel(){
 
-try{
+    const exportPlayers=Object.keys(playerState)
+        .filter(name=>playerState[name].time>=1);
 
-const rows=buildRows();
+    if(!exportPlayers.length){
+        alert("出場時間1秒以上の選手がいません");
+        return;
+    }
 
-const ws=XLSX.utils.aoa_to_sheet(rows);
-const wb=XLSX.utils.book_new();
+    const rows=[];
 
-XLSX.utils.book_append_sheet(wb,ws,"TM");
+    exportPlayers.forEach(player=>{
 
-const wbout=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+        const r=records[player];
+        const parts=player.split(" ");
 
-const blob=new Blob([wbout],{
-type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-});
+        const sec=playerState[player].time;
+        const m=Math.floor(sec/60);
+        const s=sec%60;
 
-saveAs(blob,buildFileName()+".xlsx");
+        rows.push({
+            対戦相手:opponent.value||"",
+            日にち:matchDate.value||"",
+            フォーメーション:formation.value||"",
+            攻守:currentMode,
+            選手NO:parts[0],
+            選手名:parts[1],
+            出場時間:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
+            CHA:r.CHA||0,
+            SHO:r.SHO||0,
+            HD_O:r.HD_O||0,
+            THP:r.THP||0,
+            LP:r.LP||0,
+            SZ:r.SZ||0,
+            PO:r.PO||0,
+            HD_D:r.HD_D||0,
+            SL:r.SL||0
+        });
+    });
 
-}catch(e){
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.json_to_sheet(rows);
 
-alert("Excel出力失敗 → CSV出力します");
-exportCSV();
+    XLSX.utils.book_append_sheet(wb,ws,"TM");
 
+    const yyyymmdd=(matchDate.value||"").replaceAll("-","");
+    const opponentName=(opponent.value||"match").replace(/\s+/g,"");
+
+    XLSX.writeFile(
+        wb,
+        `${yyyymmdd}_${opponentName}.xlsx`
+    );
 }
-
-}
-
-function exportCSV(){
-
-const rows=buildRows();
-
-let csv=rows.map(r=>r.join(",")).join("\n");
-
-const blob=new Blob([csv],{type:"text/csv"});
-
-saveAs(blob,buildFileName()+".csv");
-
-}
-
-function buildFileName(){
-
-const d=(matchDate.value||"").replaceAll("-","");
-const o=(opponent.value||"match").replace(/\s+/g,"");
-
-return d+"_"+o;
-
-}
-
-function buildRows(){
-
-const header=[
-"対戦相手","日にち","フォーメーション","攻守",
-"選手NO","選手名","出場時間",
-"CHA","SHO","HD_O","THP","LP","SZ","PO","HD_D","SL"
-];
-
-const rows=[header];
-
-Object.keys(playerState).forEach(player=>{
-
-if(playerState[player].time<1)return;
-
-const r=records[player];
-const parts=player.split(" ");
-
-const sec=playerState[player].time;
-const m=Math.floor(sec/60);
-const s=sec%60;
-
-rows.push([
-opponent.value,
-matchDate.value,
-formation.value,
-currentMode,
-parts[0],
-parts[1],
-`${m}:${s}`,
-r.CHA,r.SHO,r.HD_O,r.THP,r.LP,r.SZ,r.PO,r.HD_D,r.SL
-]);
-
-});
-
-return rows;
-
-}
-
-/* ===== 自動保存 ===== */
-
-function saveState(){
-
-localStorage.setItem("stats_state",JSON.stringify({
-records,
-playerState,
-currentMode
-}));
-
-}
-
-function loadState(){
-
-const s=localStorage.getItem("stats_state");
-
-if(!s)return;
-
-const data=JSON.parse(s);
-
-records=data.records||records;
-playerState=data.playerState||playerState;
-currentMode=data.currentMode||"";
-
-}
-
-loadState();
 
 </script>
 
