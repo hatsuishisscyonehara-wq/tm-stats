@@ -104,7 +104,6 @@ href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8t
 </a>
 
 <div class="card">
-
 <div class="form-row">
 <label>記録員</label>
 <input type="text" id="recorder" placeholder="コーチ氏名">
@@ -145,7 +144,7 @@ href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8t
 <div>入力タイプ</div>
 <label><input type="radio" name="mode" value="attack"> 攻撃</label>
 <label><input type="radio" name="mode" value="defense"> 守備</label>
-<label><input type="radio" name="mode" value="both"> 攻守両方</label>
+<label><input type="radio" name="mode" value="both" checked> 攻守両方</label>
 </div>
 
 <div class="card">
@@ -167,22 +166,15 @@ href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8t
 </a>
 
 <script>
-
 const GAS_URL="https://script.google.com/macros/s/AKfycbxqCz9XHfNO3PUE266tHhoNzsIxojxfNA7V3-QomhUdSOFqrZK5dNrn7rBPNBBiLErf/exec";
 
 const positionsList=["FW","CH","RH","LH","CB","RB","LB","GK"];
 let positions={};
 
 const labels={
-CHA:"【攻撃】ドリブルチャレンジ",
-SHO:"【攻撃】シュート",
-HD_O:"【攻撃】ヘディング",
-THP:"【攻撃】スルーパス",
-LP:"【攻撃】ロングパス",
-SZ:"【守備】ボール完全奪取",
-PO:"【守備】抜かれた数",
-HD_D:"【守備】ヘディングクリア",
-SL:"【守備】スライディング"
+CHA:"【攻撃】ドリブルチャレンジ", SHO:"【攻撃】シュート", HD_O:"【攻撃】ヘディング",
+THP:"【攻撃】スルーパス", LP:"【攻撃】ロングパス", SZ:"【守備】ボール完全奪取",
+PO:"【守備】抜かれた数", HD_D:"【守備】ヘディングクリア", SL:"【守備】スライディング"
 };
 
 const players=[
@@ -197,169 +189,222 @@ const players=[
 const attackKeys=["CHA","SHO","HD_O","THP","LP"];
 const defenseKeys=["SZ","PO","HD_D","SL"];
 
-let records={},playerState={},currentMode="",timerInterval=null;
+let records={}, playerState={}, currentMode="", timerInterval=null;
+let isMatchStarted = false; 
+let isMatchRunning = false; 
 
+// 初期化
 players.forEach(p=>{
-positions[p]="";
+    positions[p]="";
+    playerState[p]={active:false, time:0, lastStartTime:null};
+    records[p]={};
+    [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
 
-const label=document.createElement("label");
-const check=document.createElement("input");
-check.type="checkbox";
-check.value=p;
-check.onchange=syncPlayerTimer;
+    const label=document.createElement("label");
+    const check=document.createElement("input");
+    check.type="checkbox";
+    check.value=p;
+    check.onchange=syncPlayerTimer;
 
-label.appendChild(check);
-label.append(" "+p);
+    label.appendChild(check);
+    label.append(" "+p);
 
-const span=document.createElement("span");
-span.id="timer_"+p.replace(" ","_");
-span.className="timer";
-span.innerText="00:00";
+    const span=document.createElement("span");
+    span.id="timer_"+p.replace(/\s+/g,"_");
+    span.className="timer";
+    span.innerText="00:00";
 
-label.appendChild(span);
-playerList.appendChild(label);
-
-playerState[p]={active:false,time:0};
-records[p]={};
-[...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
+    label.appendChild(span);
+    document.getElementById("playerList").appendChild(label);
 });
 
 function positionSelectHTML(name){
-return `
-<div class="form-row">
-<label>ポジション</label>
-<select onchange="positions['${name}']=this.value">
-<option value="" ${!positions[name] ? "selected" : ""}>ポジション選択</option>
-${positionsList.map(p=>`
-<option value="${p}" ${positions[name]===p ? "selected" : ""}>
-${p}
-</option>`).join("")}
-</select>
-</div>`;
+    return `
+    <div class="form-row">
+    <label>ポジション</label>
+    <select onchange="positions['${name}']=this.value">
+    <option value="" ${!positions[name] ? "selected" : ""}>ポジション選択</option>
+    ${positionsList.map(p=>`
+    <option value="${p}" ${positions[name]===p ? "selected" : ""}>${p}</option>`).join("")}
+    </select>
+    </div>`;
 }
 
 function renderCounters(){
-inputArea.innerHTML="";
-const checked=[...document.querySelectorAll("#playerList input:checked")];
+    const inputArea = document.getElementById("inputArea");
+    inputArea.innerHTML="";
+    const checked=[...document.querySelectorAll("#playerList input:checked")];
 
-checked.forEach(c=>{
-const name=c.value;
-const card=document.createElement("div");
-card.className="card";
+    checked.forEach(c=>{
+        const name=c.value;
+        const card=document.createElement("div");
+        card.className="card";
+        card.innerHTML=`<b>${name}</b>`;
+        card.innerHTML+=positionSelectHTML(name);
 
-card.innerHTML=`<b>${name}</b>`;
-card.innerHTML+=positionSelectHTML(name);
-
-if(currentMode==="attack"||currentMode==="both"){
-attackKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
-}
-if(currentMode==="defense"||currentMode==="both"){
-defenseKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
-}
-
-inputArea.appendChild(card);
-});
+        if(isMatchStarted){
+            if(currentMode==="attack"||currentMode==="both"){
+                attackKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
+            }
+            if(currentMode==="defense"||currentMode==="both"){
+                defenseKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
+            }
+        }
+        inputArea.appendChild(card);
+    });
 }
 
 function counterHTML(name,key){
-return `
-<div class="counter">
-<div style="flex:1">${labels[key]}</div>
-<button onclick="change('${name}','${key}',-1)">-</button>
-<div class="value" id="${name}_${key}">${records[name][key]}</div>
-<button onclick="change('${name}','${key}',1)">+</button>
-</div>`;
+    return `
+    <div class="counter">
+    <div style="flex:1">${labels[key]}</div>
+    <button onclick="change('${name}','${key}',-1)">-</button>
+    <div class="value" id="${name}_${key}">${records[name][key]}</div>
+    <button onclick="change('${name}','${key}',1)">+</button>
+    </div>`;
 }
 
 function change(player,key,delta){
-records[player][key]+=delta;
-if(records[player][key]<0)records[player][key]=0;
-document.getElementById(`${player}_${key}`).innerText=records[player][key];
+    records[player][key]+=delta;
+    if(records[player][key]<0)records[player][key]=0;
+    const el = document.getElementById(`${player}_${key}`);
+    if(el) el.innerText = records[player][key];
 }
 
 function startMatch(){
-const mode=document.querySelector("input[name='mode']:checked");
-if(!mode){alert("入力タイプ選択");return;}
-currentMode=mode.value;
-syncPlayerTimer();
+    const mode=document.querySelector("input[name='mode']:checked");
+    if(!mode){alert("入力タイプ選択");return;}
+    currentMode=mode.value;
+    
+    isMatchStarted = true;
+    isMatchRunning = true;
 
-if(!timerInterval){
-timerInterval=setInterval(()=>{
-Object.keys(playerState).forEach(name=>{
-if(playerState[name].active){
-playerState[name].time++;
-updateTimerUI(name);
-}});
-},1000);
-}
-renderCounters();
+    const now = Date.now();
+    document.querySelectorAll("#playerList input:checked").forEach(el => {
+        const name = el.value;
+        if(!playerState[name].lastStartTime) playerState[name].lastStartTime = now;
+    });
+
+    if(!timerInterval){
+        timerInterval=setInterval(updateAllTimers, 1000);
+    }
+    renderCounters();
 }
 
 function syncPlayerTimer(){
-document.querySelectorAll("#playerList input").forEach(el=>{
-playerState[el.value].active=el.checked;
-});
-renderCounters();
+    const now = Date.now();
+    document.querySelectorAll("#playerList input").forEach(el=>{
+        const name = el.value;
+        const isChecked = el.checked;
+
+        if(isChecked && !playerState[name].active){
+            playerState[name].active = true;
+            if(isMatchRunning) playerState[name].lastStartTime = now;
+        } else if(!isChecked && playerState[name].active){
+            playerState[name].active = false;
+            if(playerState[name].lastStartTime){
+                playerState[name].time += Math.floor((now - playerState[name].lastStartTime) / 1000);
+                playerState[name].lastStartTime = null;
+            }
+        }
+    });
+    renderCounters();
 }
 
-function updateTimerUI(name){
-const sec=playerState[name].time;
-const m=Math.floor(sec/60);
-const s=sec%60;
-document.getElementById("timer_"+name.replace(" ","_")).innerText=
-String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+function updateAllTimers(){
+    const now = Date.now();
+    Object.keys(playerState).forEach(name => {
+        let total = playerState[name].time;
+        if(isMatchRunning && playerState[name].active && playerState[name].lastStartTime){
+            total += Math.floor((now - playerState[name].lastStartTime) / 1000);
+        }
+        const m = Math.floor(total/60);
+        const s = total%60;
+        const el = document.getElementById("timer_"+name.replace(/\s+/g,"_"));
+        if(el) el.innerText = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    });
 }
 
 function finishMatch(){
-clearInterval(timerInterval);
-timerInterval=null;
+    isMatchRunning = false;
+    const now = Date.now();
+    Object.keys(playerState).forEach(name => {
+        if(playerState[name].lastStartTime){
+            playerState[name].time += Math.floor((now - playerState[name].lastStartTime) / 1000);
+            playerState[name].lastStartTime = null;
+        }
+    });
+    clearInterval(timerInterval);
+    timerInterval = null;
+    updateAllTimers();
+    renderCounters();
 }
 
 function buildRows(){
-const rows=[];
-Object.keys(playerState)
-.filter(n=>playerState[n].time>=1)
-.forEach(player=>{
-const r=records[player];
-const parts=player.split(" ");
+    const rows=[];
+    const now = Date.now();
+    Object.keys(playerState).forEach(player=>{
+        let total = playerState[player].time;
+        if(isMatchRunning && playerState[player].active && playerState[player].lastStartTime){
+            total += Math.floor((now - playerState[player].lastStartTime) / 1000);
+        }
+        if(total < 1) return;
 
-const sec=playerState[player].time;
-const m=Math.floor(sec/60);
-const s=sec%60;
+        const r=records[player];
+        const parts=player.split(" ");
+        const m=Math.floor(total/60);
+        const s=total%60;
 
-rows.push({
-対戦相手:opponent.value||"",
-試合番号:matchNumber.value||"",
-日にち:matchDate.value||"",
-フォーメーション:"'"+(formation.value||""),
-攻守:currentMode,
-選手NO:parts[0],
-選手名:parts[1],
-ポジション:positions[player]||"",
-出場時間:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
-CHA:r.CHA,SHO:r.SHO,HD_O:r.HD_O,THP:r.THP,LP:r.LP,
-SZ:r.SZ,PO:r.PO,HD_D:r.HD_D,SL:r.SL,
-記録員:recorder.value||""
-});
-});
-return rows;
+        rows.push({
+            対戦相手:document.getElementById("opponent").value||"",
+            試合番号:document.getElementById("matchNumber").value||"",
+            日にち:document.getElementById("matchDate").value||"",
+            フォーメーション:"'"+(document.getElementById("formation").value||""),
+            攻守:currentMode,
+            選手NO:parts[0], 選手名:parts[1], ポジション:positions[player]||"",
+            出場時間:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
+            CHA:r.CHA,SHO:r.SHO,HD_O:r.HD_O,THP:r.THP,LP:r.LP,
+            SZ:r.SZ,PO:r.PO,HD_D:r.HD_D,SL:r.SL,
+            記録員:document.getElementById("recorder").value||""
+        });
+    });
+    return rows;
 }
 
 function exportGoogle(){
-const rows=buildRows();
-fetch(GAS_URL,{
-method:"POST",
-body:JSON.stringify(rows),
-mode:"no-cors"
-});
-alert("✅ 送信完了");
+    const rows = buildRows();
+    if(rows.length === 0){
+        alert("データがありません（計測された選手がいません）");
+        return;
+    }
+
+    // 未入力項目のチェック
+    const checkFields = [
+        { id: "recorder", name: "記録員" },
+        { id: "matchDate", name: "日にち" },
+        { id: "opponent", name: "対戦相手" },
+        { id: "matchNumber", name: "試合番号" },
+        { id: "formation", name: "フォーメーション" }
+    ];
+    
+    let missing = [];
+    checkFields.forEach(f => {
+        if(!document.getElementById(f.id).value) missing.push(f.name);
+    });
+
+    // ポップアップ確認
+    if(missing.length > 0){
+        const msg = `以下の項目が未入力です：\n【 ${missing.join(", ")} 】\n\nこのままスプシ送信してよろしいですか？`;
+        if(!confirm(msg)) return; // キャンセルなら中断
+    }
+
+    fetch(GAS_URL,{ method:"POST", body:JSON.stringify(rows), mode:"no-cors" });
+    alert("✅ 送信完了");
 }
 
 function clearAllData(){
-location.reload();
+    if(confirm("データを全て消去しますか？")) location.reload();
 }
-
 </script>
-
 </body>
 </html>
