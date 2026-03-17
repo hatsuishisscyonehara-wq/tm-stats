@@ -144,7 +144,7 @@ href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8t
 <div>入力タイプ</div>
 <label><input type="radio" name="mode" value="attack"> 攻撃</label>
 <label><input type="radio" name="mode" value="defense"> 守備</label>
-<label><input type="radio" name="mode" value="both" checked> 攻守両方</label>
+<label><input type="radio" name="mode" value="both"> 攻守両方</label>
 </div>
 
 <div class="card">
@@ -193,13 +193,23 @@ let records={}, playerState={}, currentMode="", timerInterval=null;
 let isMatchStarted = false; 
 let isMatchRunning = false; 
 
-// 初期化
-players.forEach(p=>{
-    positions[p]="";
-    playerState[p]={active:false, time:0, lastStartTime:null};
-    records[p]={};
-    [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
+// 二重送信チェック用のSet
+let submittedIds = new Set();
 
+// 初期化
+function initDataStructures() {
+    players.forEach(p=>{
+        positions[p]="";
+        playerState[p]={active:false, time:0, lastStartTime:null};
+        records[p]={};
+        [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
+    });
+}
+
+initDataStructures();
+
+// 選手リストの描画
+players.forEach(p=>{
     const label=document.createElement("label");
     const check=document.createElement("input");
     check.type="checkbox";
@@ -273,7 +283,7 @@ function change(player,key,delta){
 
 function startMatch(){
     const mode=document.querySelector("input[name='mode']:checked");
-    if(!mode){alert("入力タイプ選択");return;}
+    if(!mode){alert("入力タイプを選択してください");return;}
     currentMode=mode.value;
     
     isMatchStarted = true;
@@ -378,6 +388,18 @@ function exportGoogle(){
         return;
     }
 
+    // 試合IDの生成 (日にち＋対戦相手＋試合番号＋攻守)
+    const matchDate = document.getElementById("matchDate").value;
+    const opponent = document.getElementById("opponent").value;
+    const matchNumber = document.getElementById("matchNumber").value;
+    const matchId = `${matchDate}_${opponent}_${matchNumber}_${currentMode}`;
+
+    // 二重送信チェック
+    if(submittedIds.has(matchId)){
+        alert(`【エラー】この試合データは既に送信済みです。\n(ID: ${matchId})`);
+        return;
+    }
+
     // 未入力項目のチェック
     const checkFields = [
         { id: "recorder", name: "記録員" },
@@ -395,15 +417,38 @@ function exportGoogle(){
     // ポップアップ確認
     if(missing.length > 0){
         const msg = `以下の項目が未入力です：\n【 ${missing.join(", ")} 】\n\nこのままスプシ送信してよろしいですか？`;
-        if(!confirm(msg)) return; // キャンセルなら中断
+        if(!confirm(msg)) return;
     }
 
     fetch(GAS_URL,{ method:"POST", body:JSON.stringify(rows), mode:"no-cors" });
+    
+    // 送信済みIDを記録
+    submittedIds.add(matchId);
     alert("✅ 送信完了");
 }
 
 function clearAllData(){
-    if(confirm("データを全て消去しますか？")) location.reload();
+    if(confirm("出場選手のチェック、試合時間、スタッツをクリアしますか？\n（記録員などの基本情報は保持されます）")){
+        // タイマー停止
+        clearInterval(timerInterval);
+        timerInterval = null;
+        isMatchStarted = false;
+        isMatchRunning = false;
+        currentMode = "";
+
+        // ラジオボタン解除
+        document.querySelectorAll("input[name='mode']").forEach(r => r.checked = false);
+
+        // 選手チェック解除
+        document.querySelectorAll("#playerList input[type='checkbox']").forEach(c => c.checked = false);
+
+        // データ構造のリセット
+        initDataStructures();
+
+        // 表示のリセット
+        updateAllTimers();
+        renderCounters();
+    }
 }
 </script>
 </body>
