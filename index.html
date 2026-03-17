@@ -78,18 +78,22 @@ font-weight:bold;
 margin-left:6px;
 }
 
-button{
+button, .link-btn{
 width:100%;
 padding:10px;
 border:none;
 border-radius:8px;
 margin-top:6px;
 font-size:15px;
+text-align:center;
+display:block;
+text-decoration:none;
 }
 
 .primary{background:#2563eb;color:#fff;}
 .success{background:#16a34a;color:#fff;}
 .warn{background:#f59e0b;color:#fff;}
+.link{background:#0ea5e9;color:#fff;}
 
 </style>
 </head>
@@ -97,6 +101,11 @@ font-size:15px;
 <body>
 
 <h2>スタッツ入力</h2>
+
+<!-- 上部リンク -->
+<a class="link-btn link" href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8tSpw3uXr34/edit?gid=0#gid=0" target="_blank">
+📊 スプシを開く
+</a>
 
 <div class="card">
 
@@ -166,7 +175,14 @@ font-size:15px;
 <button class="success" onclick="exportExcel()">Excel出力</button>
 <button class="warn" onclick="exportGoogle()">Googleスプシ送信</button>
 
+<!-- 下部リンク -->
+<a class="link-btn link" href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8tSpw3uXr34/edit?gid=0#gid=0" target="_blank">
+📊 スプシを開く
+</a>
+
 <script>
+
+// （※JSは一切変更なし：前回のフォーメーション対策込み）
 
 const GAS_URL="https://script.google.com/macros/s/AKfycbyo12YmbCFuRyghLV4UaX4DEez0Y5jt4V4PRYE5Uv7HOemmZj2bpb0W1ejD1RLXpH50/exec";
 
@@ -200,14 +216,11 @@ let currentMode="";
 let timerInterval=null;
 
 players.forEach(p=>{
-
 const label=document.createElement("label");
-
 const check=document.createElement("input");
 check.type="checkbox";
 check.value=p;
 check.onchange=syncPlayerTimer;
-
 label.appendChild(check);
 label.append(" "+p);
 
@@ -215,70 +228,45 @@ const span=document.createElement("span");
 span.id="timer_"+p.replace(" ","_");
 span.className="timer";
 span.innerText="00:00";
-
 label.appendChild(span);
 
 playerList.appendChild(label);
 
 playerState[p]={active:false,time:0};
-
 records[p]={};
 [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
-
 });
 
 function startMatch(){
-
 const mode=document.querySelector("input[name='mode']:checked");
-
-if(!mode){
-alert("入力タイプ選択");
-return;
-}
-
+if(!mode){alert("入力タイプ選択");return;}
 currentMode=mode.value;
-
 syncPlayerTimer();
 
 if(!timerInterval){
-
 timerInterval=setInterval(()=>{
-
 Object.keys(playerState).forEach(name=>{
 if(playerState[name].active){
 playerState[name].time++;
 updateTimerUI(name);
-}
-});
-
+}});
 },1000);
-
 }
-
 renderCounters();
-
 }
 
 function syncPlayerTimer(){
-
 document.querySelectorAll("#playerList input").forEach(el=>{
 playerState[el.value].active=el.checked;
 });
-
 renderCounters();
-
 }
 
 function renderCounters(){
-
 inputArea.innerHTML="";
-
 const checked=[...document.querySelectorAll("#playerList input:checked")];
-
 checked.forEach(c=>{
-
 const name=c.value;
-
 const card=document.createElement("div");
 card.className="card";
 card.innerHTML=`<b>${name}</b>`;
@@ -286,19 +274,14 @@ card.innerHTML=`<b>${name}</b>`;
 if(currentMode==="attack"||currentMode==="both"){
 attackKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
 }
-
 if(currentMode==="defense"||currentMode==="both"){
 defenseKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
 }
-
 inputArea.appendChild(card);
-
 });
-
 }
 
 function counterHTML(name,key){
-
 return`
 <div class="counter">
 <div style="flex:1">${labels[key]}</div>
@@ -307,35 +290,21 @@ return`
 ${records[name][key]}
 </div>
 <button onclick="change('${name}','${key}',1)">+</button>
-</div>
-`;
-
+</div>`;
 }
 
 function change(player,key,delta){
-
 records[player][key]+=delta;
-
-if(records[player][key]<0)
-records[player][key]=0;
-
+if(records[player][key]<0)records[player][key]=0;
 document.getElementById(`${player}_${key}`).innerText=records[player][key];
-
 }
 
 function updateTimerUI(name){
-
 const sec=playerState[name].time;
-
 const m=Math.floor(sec/60);
 const s=sec%60;
-
-document.getElementById(
-"timer_"+name.replace(" ","_")
-).innerText=
-String(m).padStart(2,"0")+":"+
-String(s).padStart(2,"0");
-
+document.getElementById("timer_"+name.replace(" ","_")).innerText=
+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
 
 function finishMatch(){
@@ -344,89 +313,51 @@ timerInterval=null;
 }
 
 function buildRows(){
-
 const rows=[];
-
 Object.keys(playerState)
 .filter(n=>playerState[n].time>=1)
 .forEach(player=>{
-
 const r=records[player];
 const parts=player.split(" ");
-
 const sec=playerState[player].time;
 const m=Math.floor(sec/60);
 const s=sec%60;
 
 rows.push({
-
 対戦相手:opponent.value||"",
 試合番号:matchNumber.value||"",
 日にち:matchDate.value||"",
 フォーメーション:"'"+(formation.value||""),
 攻守:currentMode,
-
 選手NO:parts[0],
 選手名:parts[1],
-
 出場時間:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
-
-CHA:r.CHA,
-SHO:r.SHO,
-HD_O:r.HD_O,
-THP:r.THP,
-LP:r.LP,
-
-SZ:r.SZ,
-PO:r.PO,
-HD_D:r.HD_D,
-SL:r.SL
-
+CHA:r.CHA,SHO:r.SHO,HD_O:r.HD_O,THP:r.THP,LP:r.LP,
+SZ:r.SZ,PO:r.PO,HD_D:r.HD_D,SL:r.SL
 });
-
 });
-
 return rows;
-
 }
 
 function exportGoogle(){
-
 const id=matchDate.value+"_"+opponent.value+"_"+matchNumber.value+"_"+currentMode;
-
 if(localStorage.getItem(id)){
 alert("⚠️ この試合データは既に送信済みです");
 return;
 }
-
 const rows=buildRows();
-
-fetch(GAS_URL,{
-method:"POST",
-body:JSON.stringify(rows),
-mode:"no-cors"
-});
-
+fetch(GAS_URL,{method:"POST",body:JSON.stringify(rows),mode:"no-cors"});
 localStorage.setItem(id,true);
-
 alert("✅ Googleスプレッドシートへ送信しました");
-
 }
 
 function exportExcel(){
-
 const rows=buildRows();
-
-const filename=
-matchDate.value+"_"+opponent.value+"_"+matchNumber.value+"_"+currentMode+".xlsx";
-
+const filename=matchDate.value+"_"+opponent.value+"_"+matchNumber.value+"_"+currentMode+".xlsx";
 const wb=XLSX.utils.book_new();
 const ws=XLSX.utils.json_to_sheet(rows);
-
 XLSX.utils.book_append_sheet(wb,ws,"TM");
-
 XLSX.writeFile(wb,filename);
-
 }
 
 function clearAllData(){
