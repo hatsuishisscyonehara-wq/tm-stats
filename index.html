@@ -5,10 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>スタッツ入力</title>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
 <style>
-
 body{
 font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
 background:#f3f4f6;
@@ -94,7 +91,6 @@ text-decoration:none;
 .success{background:#16a34a;color:#fff;}
 .warn{background:#f59e0b;color:#fff;}
 .link{background:#0ea5e9;color:#fff;}
-
 </style>
 </head>
 
@@ -102,12 +98,17 @@ text-decoration:none;
 
 <h2>スタッツ入力</h2>
 
-<!-- 上部リンク -->
-<a class="link-btn link" href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8tSpw3uXr34/edit?gid=0#gid=0" target="_blank">
+<a class="link-btn link" target="_blank"
+href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8tSpw3uXr34/edit?gid=0#gid=0">
 📊 スプシを開く
 </a>
 
 <div class="card">
+
+<div class="form-row">
+<label>記録員</label>
+<input type="text" id="recorder" placeholder="コーチ氏名">
+</div>
 
 <div class="form-row">
 <label>日にち</label>
@@ -123,16 +124,9 @@ text-decoration:none;
 <label>試合番号</label>
 <select id="matchNumber">
 <option value="">選択</option>
-<option>1</option>
-<option>2</option>
-<option>3</option>
-<option>4</option>
-<option>5</option>
-<option>6</option>
-<option>7</option>
-<option>8</option>
-<option>9</option>
-<option>10</option>
+<option>1</option><option>2</option><option>3</option><option>4</option>
+<option>5</option><option>6</option><option>7</option><option>8</option>
+<option>9</option><option>10</option>
 </select>
 </div>
 
@@ -145,46 +139,39 @@ text-decoration:none;
 <option>2-3-2</option>
 </select>
 </div>
-
 </div>
 
 <div class="card">
-
 <div>入力タイプ</div>
-
 <label><input type="radio" name="mode" value="attack"> 攻撃</label>
 <label><input type="radio" name="mode" value="defense"> 守備</label>
 <label><input type="radio" name="mode" value="both"> 攻守両方</label>
-
 </div>
 
 <div class="card">
-
 <div>出場選手</div>
-
 <div class="player-list" id="playerList"></div>
 
 <button class="primary" onclick="startMatch()">試合開始(後半開始)</button>
 <button class="success" onclick="finishMatch()">試合終了(前半終了)</button>
 <button class="primary" onclick="clearAllData()">全クリア</button>
-
 </div>
 
 <div id="inputArea"></div>
 
-<button class="success" onclick="exportExcel()">Excel出力</button>
 <button class="warn" onclick="exportGoogle()">Googleスプシ送信</button>
 
-<!-- 下部リンク -->
-<a class="link-btn link" href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8tSpw3uXr34/edit?gid=0#gid=0" target="_blank">
+<a class="link-btn link" target="_blank"
+href="https://docs.google.com/spreadsheets/d/1nC2e4qS2NVTOlQppacY1VGAB08Ew8jVZ8tSpw3uXr34/edit?gid=0#gid=0">
 📊 スプシを開く
 </a>
 
 <script>
 
-// （※JSは一切変更なし：前回のフォーメーション対策込み）
+const GAS_URL="https://script.google.com/macros/s/AKfycbxqCz9XHfNO3PUE266tHhoNzsIxojxfNA7V3-QomhUdSOFqrZK5dNrn7rBPNBBiLErf/exec";
 
-const GAS_URL="https://script.google.com/macros/s/AKfycbyo12YmbCFuRyghLV4UaX4DEez0Y5jt4V4PRYE5Uv7HOemmZj2bpb0W1ejD1RLXpH50/exec";
+const positionsList=["FW","CH","RH","LH","CB","RB","LB","GK"];
+let positions={};
 
 const labels={
 CHA:"【攻撃】ドリブルチャレンジ",
@@ -210,17 +197,17 @@ const players=[
 const attackKeys=["CHA","SHO","HD_O","THP","LP"];
 const defenseKeys=["SZ","PO","HD_D","SL"];
 
-let records={};
-let playerState={};
-let currentMode="";
-let timerInterval=null;
+let records={},playerState={},currentMode="",timerInterval=null;
 
 players.forEach(p=>{
+positions[p]="";
+
 const label=document.createElement("label");
 const check=document.createElement("input");
 check.type="checkbox";
 check.value=p;
 check.onchange=syncPlayerTimer;
+
 label.appendChild(check);
 label.append(" "+p);
 
@@ -228,14 +215,67 @@ const span=document.createElement("span");
 span.id="timer_"+p.replace(" ","_");
 span.className="timer";
 span.innerText="00:00";
-label.appendChild(span);
 
+label.appendChild(span);
 playerList.appendChild(label);
 
 playerState[p]={active:false,time:0};
 records[p]={};
 [...attackKeys,...defenseKeys].forEach(k=>records[p][k]=0);
 });
+
+function positionSelectHTML(name){
+return `
+<div class="form-row">
+<label>ポジション</label>
+<select onchange="positions['${name}']=this.value">
+<option value="" ${!positions[name] ? "selected" : ""}>ポジション選択</option>
+${positionsList.map(p=>`
+<option value="${p}" ${positions[name]===p ? "selected" : ""}>
+${p}
+</option>`).join("")}
+</select>
+</div>`;
+}
+
+function renderCounters(){
+inputArea.innerHTML="";
+const checked=[...document.querySelectorAll("#playerList input:checked")];
+
+checked.forEach(c=>{
+const name=c.value;
+const card=document.createElement("div");
+card.className="card";
+
+card.innerHTML=`<b>${name}</b>`;
+card.innerHTML+=positionSelectHTML(name);
+
+if(currentMode==="attack"||currentMode==="both"){
+attackKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
+}
+if(currentMode==="defense"||currentMode==="both"){
+defenseKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
+}
+
+inputArea.appendChild(card);
+});
+}
+
+function counterHTML(name,key){
+return `
+<div class="counter">
+<div style="flex:1">${labels[key]}</div>
+<button onclick="change('${name}','${key}',-1)">-</button>
+<div class="value" id="${name}_${key}">${records[name][key]}</div>
+<button onclick="change('${name}','${key}',1)">+</button>
+</div>`;
+}
+
+function change(player,key,delta){
+records[player][key]+=delta;
+if(records[player][key]<0)records[player][key]=0;
+document.getElementById(`${player}_${key}`).innerText=records[player][key];
+}
 
 function startMatch(){
 const mode=document.querySelector("input[name='mode']:checked");
@@ -262,43 +302,6 @@ playerState[el.value].active=el.checked;
 renderCounters();
 }
 
-function renderCounters(){
-inputArea.innerHTML="";
-const checked=[...document.querySelectorAll("#playerList input:checked")];
-checked.forEach(c=>{
-const name=c.value;
-const card=document.createElement("div");
-card.className="card";
-card.innerHTML=`<b>${name}</b>`;
-
-if(currentMode==="attack"||currentMode==="both"){
-attackKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
-}
-if(currentMode==="defense"||currentMode==="both"){
-defenseKeys.forEach(k=>card.innerHTML+=counterHTML(name,k));
-}
-inputArea.appendChild(card);
-});
-}
-
-function counterHTML(name,key){
-return`
-<div class="counter">
-<div style="flex:1">${labels[key]}</div>
-<button onclick="change('${name}','${key}',-1)">-</button>
-<div class="value" id="${name}_${key}">
-${records[name][key]}
-</div>
-<button onclick="change('${name}','${key}',1)">+</button>
-</div>`;
-}
-
-function change(player,key,delta){
-records[player][key]+=delta;
-if(records[player][key]<0)records[player][key]=0;
-document.getElementById(`${player}_${key}`).innerText=records[player][key];
-}
-
 function updateTimerUI(name){
 const sec=playerState[name].time;
 const m=Math.floor(sec/60);
@@ -319,6 +322,7 @@ Object.keys(playerState)
 .forEach(player=>{
 const r=records[player];
 const parts=player.split(" ");
+
 const sec=playerState[player].time;
 const m=Math.floor(sec/60);
 const s=sec%60;
@@ -331,33 +335,24 @@ rows.push({
 攻守:currentMode,
 選手NO:parts[0],
 選手名:parts[1],
+ポジション:positions[player]||"",
 出場時間:`${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`,
 CHA:r.CHA,SHO:r.SHO,HD_O:r.HD_O,THP:r.THP,LP:r.LP,
-SZ:r.SZ,PO:r.PO,HD_D:r.HD_D,SL:r.SL
+SZ:r.SZ,PO:r.PO,HD_D:r.HD_D,SL:r.SL,
+記録員:recorder.value||""
 });
 });
 return rows;
 }
 
 function exportGoogle(){
-const id=matchDate.value+"_"+opponent.value+"_"+matchNumber.value+"_"+currentMode;
-if(localStorage.getItem(id)){
-alert("⚠️ この試合データは既に送信済みです");
-return;
-}
 const rows=buildRows();
-fetch(GAS_URL,{method:"POST",body:JSON.stringify(rows),mode:"no-cors"});
-localStorage.setItem(id,true);
-alert("✅ Googleスプレッドシートへ送信しました");
-}
-
-function exportExcel(){
-const rows=buildRows();
-const filename=matchDate.value+"_"+opponent.value+"_"+matchNumber.value+"_"+currentMode+".xlsx";
-const wb=XLSX.utils.book_new();
-const ws=XLSX.utils.json_to_sheet(rows);
-XLSX.utils.book_append_sheet(wb,ws,"TM");
-XLSX.writeFile(wb,filename);
+fetch(GAS_URL,{
+method:"POST",
+body:JSON.stringify(rows),
+mode:"no-cors"
+});
+alert("✅ 送信完了");
 }
 
 function clearAllData(){
